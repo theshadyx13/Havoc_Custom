@@ -498,9 +498,18 @@ class HcListenerHttp( pyhavoc.ui.HcListenerView ):
 
     def set_defaults( self ) -> None:
 
-        interfaces = pyhavoc.core.HcListenerProtocolData( self.listener_name() )[ "interfaces" ]
-        for interface in interfaces:
-            self.opt_combo_hostbind.addItem( interface )
+        listener_data = pyhavoc.core.HcListenerProtocolData( self.listener_name() )
+        if listener_data != None: 
+            interfaces = listener_data[ "interfaces" ]
+            if interfaces != None:
+                for interface in interfaces:
+                    self.opt_combo_hostbind.addItem( interface )
+            else:
+                self.opt_combo_hostbind.addItem( "0.0.0.0" )
+                self.opt_combo_hostbind.addItem( "127.0.0.1" )
+        else:
+            self.opt_combo_hostbind.addItem( "0.0.0.0" )
+            self.opt_combo_hostbind.addItem( "127.0.0.1" )
 
         self.opt_input_port.setText( "443" )
         self.opt_input_port.setCursorPosition( 0 )

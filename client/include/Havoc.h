@@ -21,7 +21,7 @@
 #include <api/Engine.h>
 
 #define HAVOC_VERSION  "1.0"
-#define HAVOC_CODENAME "Killer Queen"
+#define HAVOC_CODENAME "King Of The Damned"
 
 class HavocClient : public QWidget {
     

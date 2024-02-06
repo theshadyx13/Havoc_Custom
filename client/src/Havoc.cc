@@ -122,8 +122,9 @@ auto HavocClient::Main(
                 "Login failure",
                 "Failed to login: Unauthorized"
             );
-        } else {
 
+            return;
+        } else {
             if ( ( data = json::parse( Result->body ) ).is_discarded() ) {
                 goto InvalidServerResponseError;
             }
@@ -161,6 +162,10 @@ auto HavocClient::Main(
     Profile.Port = data[ "port" ].get<std::string>();
     Profile.User = data[ "username" ].get<std::string>();
     Profile.Pass = data[ "password" ].get<std::string>();
+
+    if ( Result->body.empty() ) {
+        goto InvalidServerResponseError;
+    }
 
     if ( ( data = json::parse( Result->body ) ).is_discarded() ) {
         goto InvalidServerResponseError;
