@@ -1,0 +1,17 @@
+[server]
+host = "0.0.0.0"
+port = 40056
+plugins = [
+  "../Plugins/kaine-kit/bin/http.hp",
+  "../Plugins/kaine-kit/bin/kaine.hp"
+]
+
+[[operator]]
+username = "5pider"
+password = "password1234"
+
+[[operator]]
+username = "Paul"
+password = "password1234"
+
+

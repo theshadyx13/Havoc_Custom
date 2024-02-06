@@ -35,8 +35,14 @@ func (t *Teamserver) AgentRegister(name string, agent map[string]any) error {
 	return nil
 }
 
-func (t *Teamserver) AgentProcess(context map[string]any, request []byte) ([]byte, error) {
-	return nil, nil
+func (t *Teamserver) AgentProcess(ctx map[string]any, request []byte) ([]byte, error) {
+	for _, agent := range t.payloads {
+		if agent.Data["name"].(string) == ctx["name"].(string) {
+			return t.plugins.AgentProcess(ctx, request)
+		}
+	}
+
+	return nil, errors.New("agent to process request not found")
 }
 
 func (t *Teamserver) AgentGenerate(ctx map[string]any, config map[string]any) (string, []byte, error) {

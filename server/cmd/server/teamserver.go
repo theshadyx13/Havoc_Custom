@@ -11,7 +11,7 @@ import (
 
 var (
 	Version  = "1.0"
-	CodeName = "Killer Queen"
+	CodeName = "King Of The Damned"
 )
 
 func NewTeamserver() *Teamserver {

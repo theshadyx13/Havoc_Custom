@@ -53,6 +53,7 @@ type ListenerInterface interface {
 type AgentInterface interface {
 	AgentRegister() map[string]any
 	AgentGenerate(ctx map[string]any, config map[string]any) (string, []byte, error)
+	AgentProcess(ctx map[string]any, request []byte) ([]byte, error)
 }
 
 type ManagementInterface interface{}
@@ -218,6 +219,11 @@ func (s *PluginSystem) CheckAndInsertInterface(extension *Plugin, inter any) err
 		// sanity check if the method exist
 		if _, ok = reflection.MethodByName("AgentGenerate"); !ok {
 			return fmt.Errorf("AgentGenerate not found")
+		}
+
+		// sanity check if the method exist
+		if _, ok = reflection.MethodByName("AgentProcess"); !ok {
+			return fmt.Errorf("AgentProcess not found")
 		}
 
 		// cast the interface

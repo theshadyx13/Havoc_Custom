@@ -57,6 +57,6 @@ func teamserverFunc(cmd *cobra.Command, args []string) error {
 func startMenu() {
 	fmt.Println(colors.Red("              _______           _______  _______ \n    │\\     /│(  ___  )│\\     /│(  ___  )(  ____ \\\n    │ )   ( ││ (   ) ││ )   ( ││ (   ) ││ (    \\/\n    │ (___) ││ (___) ││ │   │ ││ │   │ ││ │      \n    │  ___  ││  ___  │( (   ) )│ │   │ ││ │      \n    │ (   ) ││ (   ) │ \\ \\_/ / │ │   │ ││ │      \n    │ )   ( ││ )   ( │  \\   /  │ (___) ││ (____/\\\n    │/     \\││/     \\│   \\_/   (_______)(_______/"))
 	fmt.Println()
-	fmt.Println("  	", colors.Red("pwn"), "and", colors.Blue("elevate"), "until it's done")
+ 	fmt.Println("  	", colors.Red("pwn"), "and", colors.Blue("elevate"), "until it's done")
 	fmt.Println()
 }
