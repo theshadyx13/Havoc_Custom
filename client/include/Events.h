@@ -18,6 +18,7 @@ namespace Event {
         static std::string callback   = "agent::callback";
         static std::string console    = "agent::console";
         static std::string input      = "agent::input";
+        static std::string task       = "agent::task";
         static std::string status     = "agent::status";
         static std::string remove     = "agent::remove";
         static std::string buildlog   = "agent::build-log";

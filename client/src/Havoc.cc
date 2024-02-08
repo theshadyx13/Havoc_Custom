@@ -191,6 +191,11 @@ auto HavocClient::Main(
     Python = new HcPyEngine();
     Python->run();
 
+    if ( Gui->PageScripts->LoadCallback.has_value() ) {
+        Gui->PageScripts->LoadCallback.value()( "tests/python/kaine_payload.py" );
+        Gui->PageScripts->LoadCallback.value()( "tests/python/listener_http.py" );
+    }
+
     QApplication::exec();
 
     return;

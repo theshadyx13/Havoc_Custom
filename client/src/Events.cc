@@ -139,12 +139,19 @@ auto HavocClient::eventDispatch(
     }
     else if ( type == Event::agent::add )
     {
-
         Gui->PagePayload->RefreshBuilders();
     }
     else if ( type == Event::agent::initialize )
     {
+        if ( data.empty() ) {
+            spdlog::error( "Event::agent::initialize: invalid package (data emtpy)" );
+            return;
+        }
+
+        spdlog::debug( "Agent: {}", data.dump() );
+
         Gui->PagePayload->RefreshBuilders();
+        Gui->PageAgent->addAgent( data );
     }
     else if ( type == Event::agent::callback )
     {
@@ -156,6 +163,11 @@ auto HavocClient::eventDispatch(
     }
     else if ( type == Event::agent::input )
     {
+
+    }
+    else if ( type == Event::agent::task )
+    {
+
 
     }
     else if ( type == Event::agent::status )

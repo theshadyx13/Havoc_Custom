@@ -532,10 +532,6 @@ class HcListenerHttp( pyhavoc.ui.HcListenerView ):
             pyhavoc.ui.HcUiMessageBox( QMessageBox.Critical, "Listener error", "port is emtpy" )
             return False
 
-        if len( self.opt_list_hosts.list() ) == 0:
-            pyhavoc.ui.HcUiMessageBox( QMessageBox.Critical, "Listener error", "callback hosts is empty" )
-            return False
-
         if len( self.opt_input_useragent.text() ) == 0:
             pyhavoc.ui.HcUiMessageBox( QMessageBox.Critical, "Listener error", "user agent is empty" )
             return False

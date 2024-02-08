@@ -21,7 +21,7 @@ HcPageAgent::HcPageAgent(QWidget* parent ) : QWidget(parent ) {
     AgentTable = new QTableWidget( Splitter );
     AgentTable->setObjectName( "AgentTable" );
 
-    TitleAgentID      = new QTableWidgetItem( "ID" );
+    TitleAgentID      = new QTableWidgetItem( "UUID" );
     TitleInternal     = new QTableWidgetItem( "Internal" );
     TitleUsername     = new QTableWidgetItem( "User" );
     TitleHostname     = new QTableWidgetItem( "Host" );
@@ -43,11 +43,11 @@ HcPageAgent::HcPageAgent(QWidget* parent ) : QWidget(parent ) {
     AgentTable->setHorizontalHeaderItem( 1,  TitleInternal     );
     AgentTable->setHorizontalHeaderItem( 2,  TitleUsername     );
     AgentTable->setHorizontalHeaderItem( 3,  TitleHostname     );
-    AgentTable->setHorizontalHeaderItem( 4,  TitleSystem       );
-    AgentTable->setHorizontalHeaderItem( 5,  TitleProcessName  );
-    AgentTable->setHorizontalHeaderItem( 6,  TitleProcessArch  );
-    AgentTable->setHorizontalHeaderItem( 7,  TitleProcessID    );
-    AgentTable->setHorizontalHeaderItem( 8,  TitleThreadID     );
+    AgentTable->setHorizontalHeaderItem( 4,  TitleProcessName  );
+    AgentTable->setHorizontalHeaderItem( 5,  TitleProcessID    );
+    AgentTable->setHorizontalHeaderItem( 6,  TitleThreadID     );
+    AgentTable->setHorizontalHeaderItem( 7,  TitleProcessArch  );
+    AgentTable->setHorizontalHeaderItem( 8,  TitleSystem       );
     AgentTable->setHorizontalHeaderItem( 9,  TitleLastCallback );
     AgentTable->setHorizontalHeaderItem( 10, TitleNote         );
 
@@ -111,7 +111,7 @@ auto HcPageAgent::retranslateUi() -> void {
     setStyleSheet( Havoc->getStyleSheet() );
 
     AgentDisplayerElevated->setText( "Elevated: 0" );
-    AgentDisplayerSessions->setText( "Beacons: 0" );
+    AgentDisplayerSessions->setText( "Sessions: 0" );
     AgentDisplayerTargets->setText( "Targets: 0" );
     AgentDisplayerPivots->setText( "Pivots: 0" );
     ComboAgentView->addItems( QStringList() << "Sessions" << "Sessions Graph" << "Targets" );
@@ -124,8 +124,84 @@ auto HcPageAgent::addTab(
 
 }
 
-auto HcPageAgent::addAgent(
-    json agent
-) -> void {
+inline auto HcTableWidget(
+    const QString&     value,
+    const Qt::ItemFlag flags = Qt::ItemIsEditable
+) -> QTableWidgetItem* {
+    auto item = new QTableWidgetItem( value );
 
+    item->setTextAlignment( Qt::AlignCenter );
+    item->setFlags( item->flags() ^ flags );
+
+    return item;
+}
+
+auto HcPageAgent::addAgent(
+    const json& metadata
+) -> void {
+    auto uuid    = QString();
+    auto arch    = QString();
+    auto user    = QString();
+    auto host    = QString();
+    auto local   = QString();
+    auto path    = QString();
+    auto process = QString();
+    auto pid     = QString();
+    auto tid     = QString();
+    auto system  = QString();
+    auto last    = QString();
+    auto row     = AgentTable->rowCount();
+    auto sort    = AgentTable->isSortingEnabled();
+
+    uuid    = QString( metadata[ "uuid" ].get<std::string>().c_str() );
+    user    = QString( metadata[ "meta" ][ "user" ].get<std::string>().c_str() );
+    arch    = QString( metadata[ "meta" ][ "arch" ].get<std::string>().c_str() );
+    host    = QString( metadata[ "meta" ][ "host" ].get<std::string>().c_str() );
+    local   = QString( metadata[ "meta" ][ "local ip" ].get<std::string>().c_str() );
+    path    = QString( metadata[ "meta" ][ "process path" ].get<std::string>().c_str() );
+    process = QString( metadata[ "meta" ][ "process name"].get<std::string>().c_str() );
+    pid     = QString::number( metadata[ "meta" ][ "pid" ].get<int>() );
+    tid     = QString::number( metadata[ "meta" ][ "tid" ].get<int>() );
+    system  = QString( metadata[ "meta" ][ "system" ].get<std::string>().c_str() );
+    last    = QString( metadata[ "meta" ][ "last callback" ].get<std::string>().c_str() );
+
+    auto agent = new HcAgent{
+        .data = metadata,
+        .ui = {
+            .Uuid        = HcTableWidget( uuid ),
+            .Internal    = HcTableWidget( local ),
+            .Username    = HcTableWidget( user ),
+            .Hostname    = HcTableWidget( host ),
+            .ProcessPath = HcTableWidget( path ),
+            .ProcessName = HcTableWidget( process ),
+            .ProcessId   = HcTableWidget( pid ),
+            .ThreadId    = HcTableWidget( tid ),
+            .Arch        = HcTableWidget( arch ),
+            .System      = HcTableWidget( system ),
+            .Note        = HcTableWidget( "", Qt::NoItemFlags ),
+            .Last        = HcTableWidget( last ),
+        }
+    };
+
+    agents.push_back( agent );
+
+    AgentTable->setRowCount( row + 1 );
+    AgentTable->setSortingEnabled( false );
+    AgentTable->setItem( row, 0,  agent->ui.Uuid        );
+    AgentTable->setItem( row, 1,  agent->ui.Internal    );
+    AgentTable->setItem( row, 2,  agent->ui.Username    );
+    AgentTable->setItem( row, 3,  agent->ui.Hostname    );
+    AgentTable->setItem( row, 4,  agent->ui.ProcessName );
+    AgentTable->setItem( row, 5,  agent->ui.ProcessId   );
+    AgentTable->setItem( row, 6,  agent->ui.ThreadId    );
+    AgentTable->setItem( row, 7,  agent->ui.Arch        );
+    AgentTable->setItem( row, 8,  agent->ui.System      );
+    AgentTable->setItem( row, 9,  agent->ui.Last        );
+    AgentTable->setItem( row, 10, agent->ui.Note        );
+    AgentTable->setSortingEnabled( sort );
+
+    AgentDisplayerTargets->setText( QString( "Targets: %1" ).arg( agents.size() ) ); /* TODO: all targets (only show one host) */
+    AgentDisplayerSessions->setText( QString( "Sessions: %1" ).arg( agents.size() ) ); /* TODO: only set current alive beacons/sessions */
+    AgentDisplayerPivots->setText( "Pivots: 0" );
+    AgentDisplayerElevated->setText( "Elevated: 0" );
 }

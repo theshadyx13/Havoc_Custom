@@ -15,6 +15,25 @@
 
 QT_BEGIN_NAMESPACE
 
+struct HcAgent {
+    json data;
+
+    struct {
+        QTableWidgetItem* Uuid;
+        QTableWidgetItem* Internal;
+        QTableWidgetItem* Username;
+        QTableWidgetItem* Hostname;
+        QTableWidgetItem* ProcessPath;
+        QTableWidgetItem* ProcessName;
+        QTableWidgetItem* ProcessId;
+        QTableWidgetItem* ThreadId;
+        QTableWidgetItem* Arch;
+        QTableWidgetItem* System;
+        QTableWidgetItem* Note;
+        QTableWidgetItem* Last;
+    } ui;
+} ;
+
 class HcPageAgent : public QWidget
 {
     bool SplitterMoveToggle = false;
@@ -42,6 +61,8 @@ public:
     QTableWidgetItem* TitleNote              = nullptr;
     QTableWidgetItem* TitleLastCallback      = nullptr;
 
+    std::vector<HcAgent*> agents = {};
+
     explicit HcPageAgent(QWidget* parent = nullptr );
     ~HcPageAgent();
 
@@ -53,7 +74,7 @@ public:
     ) -> void;
 
     auto addAgent(
-        json agent
+        const json& metadata
     ) -> void;
 };
 
