@@ -24,9 +24,10 @@ const (
 const (
 	EventAgentRegister   = "agent::register"
 	EventAgentInitialize = "agent::initialize"
-	EventAgentCallback   = "agent::console"
+	EventAgentCallback   = "agent::callback"
 	EventAgentRemove     = "agent::remove"
 	EventAgentInput      = "agent::input"
+	EventAgentTask       = "agent::task"
 	EventAgentStatus     = "agent::status"
 	EventAgentBuildLog   = "agent::build-log"
 )
