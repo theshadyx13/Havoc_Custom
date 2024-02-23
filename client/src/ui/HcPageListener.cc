@@ -272,7 +272,6 @@ auto HcPageListener::handleListenerContextMenu(
             spdlog::debug( "[ERROR] invalid action from selected listener menu" );
         }
     }
-
 }
 
 auto HcPageListener::tabCloseRequested(

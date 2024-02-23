@@ -4,11 +4,11 @@
 #include <Common.h>
 #include <api/Engine.h>
 
-auto HcScriptManagerConsoleStdOut(
+auto HcIoConsoleWriteStdOut(
     const std::string& text
 ) -> void;
 
-auto HcScriptManagerLoadScriptCallback(
+auto HcIoScriptLoadCallback(
     const py11::object& callback
 ) -> void;
 

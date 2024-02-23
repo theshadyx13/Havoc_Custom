@@ -181,20 +181,38 @@ auto HavocClient::Main(
 
     Profile.Token = data[ "token" ].get<std::string>();
 
+    //
+    // setup Python thread
+    //
+    Python.Thread = new QThread;
+    Python.Engine = new HcPyEngine();
+    Python.Engine->moveToThread( Python.Thread );
+    QObject::connect( Python.Thread, & QThread::started, Python.Engine, & HcPyEngine::run );
+    Python.Thread->start();
+
     /* create main window */
     Gui = new HcMainWindow;
     Gui->renderWindow();
     Gui->setStyleSheet( getStyleSheet() );
 
-    setupThreads();
-
-    Python = new HcPyEngine();
-    Python->run();
-
-    if ( Gui->PageScripts->LoadCallback.has_value() ) {
+    //
+    // merely debug purpose loading the scripts at startup
+    //
+    // TODO: remove this in future or
+    //       move it to the config file
+    //
+    /*if ( Gui->PageScripts->LoadCallback.has_value() ) {
         Gui->PageScripts->LoadCallback.value()( "tests/python/kaine_payload.py" );
         Gui->PageScripts->LoadCallback.value()( "tests/python/listener_http.py" );
-    }
+    }*/
+
+    //
+    // set up the event thread and connect to the
+    // server and dispatch all the incoming events
+    //
+    setupThreads();
+
+    emit Havoc->Gui->PageScripts->SignalScriptEval( "print( 'testtesttest' )" );
 
     QApplication::exec();
 
@@ -306,18 +324,21 @@ auto HavocClient::Protocols() -> std::vector<std::string> {
 }
 
 auto HavocClient::setupThreads() -> void {
-    /* now set up the event thread and dispatcher */
+    //
+    // now set up the event thread and dispatcher
+    //
     Events.Thread = new QThread;
     Events.Worker = new EventWorker;
     Events.Worker->moveToThread( Events.Thread );
 
-    /* connect events */
     QObject::connect( Events.Thread, &QThread::started, Events.Worker, &EventWorker::run );
     QObject::connect( Events.Worker, &EventWorker::availableEvent, this, &HavocClient::eventHandle );
     QObject::connect( Events.Worker, &EventWorker::socketClosed, this, &HavocClient::eventClosed );
 
-    /* fire up the even thread that is going to
-     * process events and emit signals to the main gui thread */
+    //
+    // fire up the even thread that is going to
+    // process events and emit signals to the main gui thread
+    //
     Events.Thread->start();
 }
 
@@ -380,4 +401,39 @@ auto HavocClient::Listeners() -> std::vector<std::string>
     }
 
     return names;
+}
+
+auto HavocClient::Agent(
+    const std::string& uuid
+) const -> std::optional<HcAgent*> {
+
+    for ( auto agent : Gui->PageAgent->agents ) {
+        if ( agent->uuid == uuid ) {
+            return agent;
+        }
+    }
+
+    return std::nullopt;
+}
+
+auto HavocClient::AddAgentObject(
+    const std::string&  type,
+    const py11::object& object
+) -> void {
+    agents.push_back( NamedObject {
+        .name   = type,
+        .object = object
+    } );
+}
+
+auto HavocClient::AgentObject(
+    const std::string& type
+) -> std::optional<py11::object> {
+    for ( auto object : agents ) {
+        if ( object.name == type ) {
+            return object.object;
+        }
+    }
+
+    return std::nullopt;
 }

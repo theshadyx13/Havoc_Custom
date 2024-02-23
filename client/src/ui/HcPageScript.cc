@@ -59,7 +59,7 @@ HcPagePlugins::HcPagePlugins()
     TablePluginsWidget->verticalHeader()->setVisible( false );
     TablePluginsWidget->setFocusPolicy( Qt::NoFocus );
 
-    PyConsole = new HcConsole( splitter );
+    PyConsole = new HcPyConsole( splitter );
     PyConsole->setObjectName( "PyConsole" );
     PyConsole->setInputLabel( ">>>" );
     PyConsole->setBottomLabel( "[Python Interpreter]" );
@@ -83,6 +83,13 @@ HcPagePlugins::HcPagePlugins()
 
     retranslateUi();
 
+    //
+    // signals
+    //
+    QObject::connect( this, & HcPagePlugins::SignalConsoleWrite, PyConsole, & HcPyConsole::appendConsole );
+    QObject::connect( this, & HcPagePlugins::SignalScriptEval, Havoc->Python.Engine, & HcPyEngine::ScriptEval );
+    QObject::connect( this, & HcPagePlugins::SignalScriptLoad, Havoc->Python.Engine, & HcPyEngine::ScriptLoad );
+
     QObject::connect( ButtonLoad, &QPushButton::clicked, this, [&] () {
         auto FileDialog = QFileDialog();
         auto Filename   = QUrl();
@@ -96,13 +103,13 @@ HcPagePlugins::HcPagePlugins()
                         LoadCallback.value()( py11::str( Filename.toString().toStdString() ) );
                     } catch ( py11::error_already_set &eas ) {
                         exception = eas.what();
-                    } catch ( const std::exception &e ) {
-                        exception = e.what();
                     }
 
                     if ( ! exception.empty() ) {
                         PyConsole->appendConsole( exception.c_str() );
                     }
+
+                    py11::gil_scoped_release release;
                 }
             }
         } else {
@@ -124,4 +131,23 @@ auto HcPagePlugins::retranslateUi() -> void {
     setStyleSheet( Havoc->getStyleSheet() );
     ButtonLoad->setText( "Load Plugin" );
     LabelLoadedPlugins->setText( "Loaded: 0" );
+}
+
+HcPyConsole::HcPyConsole(
+    QWidget* parent
+) : HcConsole( parent ) {}
+
+auto HcPyConsole::inputEnter() -> void
+{
+    auto input = Input->text().toStdString();
+
+    Input->clear();
+
+    if ( input.empty() ) {
+        return;
+    }
+
+    appendConsole( ( ">>> " + input ).c_str() );
+
+    emit Havoc->Gui->PageScripts->SignalScriptEval( input );
 }

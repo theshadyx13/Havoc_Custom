@@ -24,7 +24,6 @@
 #define HAVOC_CODENAME "King Of The Damned"
 
 class HavocClient : public QWidget {
-    
     struct NamedObject {
         std::string  name;
         py11::object object;
@@ -48,14 +47,18 @@ class HavocClient : public QWidget {
         EventWorker* Worker;
     } Events;
 
-    std::vector<json>         listeners = {};
-    std::vector<NamedObject>  protocols = {};
-    std::vector<NamedObject>  builders  = {};
-
+    std::vector<json>         listeners  = {};
+    std::vector<NamedObject>  protocols  = {};
+    std::vector<NamedObject>  builders   = {};
+    std::vector<NamedObject>  agents     = {};
 
 public:
-    HcMainWindow* Gui    = nullptr;
-    HcPyEngine*   Python = nullptr;
+    HcMainWindow* Gui = nullptr;
+
+    struct {
+        QThread*    Thread;
+        HcPyEngine* Engine;
+    } Python;
 
     /* havoc client constructor and destructor */
     explicit HavocClient();
@@ -124,6 +127,22 @@ public:
     //
     // Server Api
     //
+
+    //
+    // Agent api
+    //
+    auto Agent(
+        const std::string& uuid
+    ) const -> std::optional<HcAgent*>;
+
+    auto AddAgentObject(
+        const std::string&  type,
+        const py11::object& object
+    ) -> void;
+
+    auto AgentObject(
+        const std::string& type
+    ) -> std::optional<py11::object>;
 
     /* send request to api endpoint */
     auto ApiSend(

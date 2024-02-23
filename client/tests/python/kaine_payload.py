@@ -5,8 +5,11 @@ from PySide6.QtCore import *
 from PySide6.QtGui import *
 from PySide6.QtWidgets import *
 
+import time
+
+
 @pyhavoc.ui.HcUiBuilderRegisterView( "Kaine" )
-class HcBuilderKaine( pyhavoc.ui.HcPayloadView ):
+class HcKaineBuilder( pyhavoc.ui.HcPayloadView ):
 
     def __init__( self, *args, **kwargs ):
         super().__init__( *args, **kwargs )
@@ -385,3 +388,19 @@ class HcBuilderKaine( pyhavoc.ui.HcPayloadView ):
     ##
     def payload( self, payload: bytes ) -> None:
         pass
+
+
+@pyhavoc.agent.HcAgentRegisterInterface( "Kaine" )
+class HcKaine( pyhavoc.agent.HcAgent ):
+
+    def __init__( self, *args, **kwargs ):
+        super().__init__( *args, **kwargs )
+
+    def input_dispatch( self, input: str ):
+        self.console_print( f"[{self.agent_uuid()}] >>> " + input )
+
+        time.sleep( 1 )
+
+        self.console_print( "finished" )
+
+        return

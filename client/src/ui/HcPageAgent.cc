@@ -1,5 +1,6 @@
 #include <Havoc.h>
 #include <ui/HcPageAgent.h>
+#include <QtConcurrent/QtConcurrent>
 
 HcPageAgent::HcPageAgent(QWidget* parent ) : QWidget(parent ) {
 
@@ -69,6 +70,7 @@ HcPageAgent::HcPageAgent(QWidget* parent ) : QWidget(parent ) {
     AgentTab->setObjectName( "AgentTab" );
     AgentTab->setTabsClosable( true );
     AgentTab->setMovable( true );
+    AgentTab->tabBar()->setProperty( "HcTab", "true" );
 
     AgentDisplayerSessions = new QLabel( this );
     AgentDisplayerSessions->setObjectName( "LabelDisplaySessions" );
@@ -91,6 +93,10 @@ HcPageAgent::HcPageAgent(QWidget* parent ) : QWidget(parent ) {
     Splitter->addWidget( AgentTable );
     Splitter->addWidget( AgentTab );
     Splitter->handle( 1 )->setEnabled( SplitterMoveToggle ); /* disabled by default */
+
+    QObject::connect( AgentTable, &QTableWidget::customContextMenuRequested, this, &HcPageAgent::handleAgentMenu );
+    QObject::connect( AgentTable, &QTableWidget::doubleClicked, this, &HcPageAgent::handleAgentDoubleClick );
+    QObject::connect( AgentTab,   &QTabWidget::tabCloseRequested, this, &HcPageAgent::tabCloseRequested );
 
     gridLayout->addWidget( ComboAgentView,         0, 0, 1, 1 );
     gridLayout->addWidget( Splitter,               1, 0, 1, 6 );
@@ -120,8 +126,14 @@ auto HcPageAgent::retranslateUi() -> void {
 auto HcPageAgent::addTab(
     const QString& name,
     QWidget*       widget
-) -> void {
+) const -> void {
+    if ( AgentTab->count() == 0 ) {
+        Splitter->setSizes( QList<int>() << 200 << 220 );
+        Splitter->handle( 1 )->setEnabled( true );
+        Splitter->handle( 1 )->setCursor( Qt::SplitVCursor );
+    }
 
+    AgentTab->addTab( widget, name );
 }
 
 inline auto HcTableWidget(
@@ -165,9 +177,11 @@ auto HcPageAgent::addAgent(
     system  = QString( metadata[ "meta" ][ "system" ].get<std::string>().c_str() );
     last    = QString( metadata[ "meta" ][ "last callback" ].get<std::string>().c_str() );
 
-    auto agent = new HcAgent{
+    auto agent = new HcAgent {
+        .uuid = uuid.toStdString(),
+        .type = metadata[ "type" ].get<std::string>(),
         .data = metadata,
-        .ui = {
+        .ui   = {
             .Uuid        = HcTableWidget( uuid ),
             .Internal    = HcTableWidget( local ),
             .Username    = HcTableWidget( user ),
@@ -182,6 +196,31 @@ auto HcPageAgent::addAgent(
             .Last        = HcTableWidget( last ),
         }
     };
+
+    agent->console = new HcAgentConsole( agent );
+    agent->console->setBottomLabel( QString( "[User: %1] [Process: %2] [Pid: %3] [Tid: %4]" ).arg( user ).arg( path ).arg( pid ).arg( tid ) );
+    agent->console->setInputLabel( ">>>" );
+    agent->console->LabelHeader->setFixedHeight( 0 );
+
+    //
+    // connect signals and slots
+    //
+    QObject::connect( & agent->emitter, & HcAgentEmit::ConsoleWrite, agent->console, & HcAgentConsole::appendConsole );
+
+    //
+    // if an interface has been registered then assign it to the agent
+    //
+    agent->interface = std::nullopt;
+    if ( auto interface = Havoc->AgentObject( agent->type ) ) {
+        if ( interface.has_value() ) {
+            try {
+                agent->interface = interface.value()( agent->uuid, agent->type, metadata[ "meta" ] );
+            } catch ( py11::error_already_set &eas ) {
+                spdlog::error( "failed to invoke agent interface [uuid: {}] [type: {}]: {}", agent->uuid, agent->type, eas.what() );
+            }
+            py11::gil_scoped_release release;
+        }
+    }
 
     agents.push_back( agent );
 
@@ -204,4 +243,92 @@ auto HcPageAgent::addAgent(
     AgentDisplayerSessions->setText( QString( "Sessions: %1" ).arg( agents.size() ) ); /* TODO: only set current alive beacons/sessions */
     AgentDisplayerPivots->setText( "Pivots: 0" );
     AgentDisplayerElevated->setText( "Elevated: 0" );
+}
+
+auto HcPageAgent::handleAgentMenu(
+    const QPoint& pos
+) -> void {
+    auto menu = QMenu( this );
+    auto uuid = std::string();
+
+    /* check if we point to a session table item/agent */
+    if ( ! AgentTable->itemAt( pos ) ) {
+        return;
+    }
+
+    uuid = AgentTable->item( AgentTable->currentRow(), 0 )->text().toStdString();
+
+    menu.addAction( "Interact" );
+
+    if ( auto action = menu.exec( AgentTable->horizontalHeader()->viewport()->mapToGlobal( pos ) ) ) {
+        if ( action->text().compare( "Interact" ) == 0 ) {
+            spawnAgentConsole( uuid );
+        } else {
+            spdlog::debug( "[ERROR] invalid action from selected agent menu" );
+        }
+    }
+}
+
+auto HcPageAgent::handleAgentDoubleClick(
+    const QModelIndex& index
+) -> void {
+    auto uuid = AgentTable->item( index.row(), 0 )->text();
+
+    spawnAgentConsole( uuid.toStdString() );
+}
+
+auto HcPageAgent::spawnAgentConsole(
+    const std::string& uuid
+) -> void {
+    for ( auto& agent : agents ) {
+        if ( agent->uuid == uuid ) {
+            auto user = agent->data[ "meta" ][ "user" ].get<std::string>();
+
+
+            addTab( QString( "[%1] %2" ).arg( uuid.c_str() ).arg( user.c_str() ), agent->console );
+
+            break;
+        }
+    }
+}
+
+auto HcPageAgent::tabCloseRequested(
+    int index
+) const -> void {
+    if ( index == -1 ) {
+        return;
+    }
+
+    AgentTab->removeTab( index );
+
+    if ( AgentTab->count() == 0 ) {
+        Splitter->setSizes( QList<int>() << 0 );
+        Splitter->handle( 1 )->setEnabled( false );
+        Splitter->handle( 1 )->setCursor( Qt::ArrowCursor );
+    }
+}
+
+HcAgentConsole::HcAgentConsole(
+    HcAgent* meta,
+    QWidget* parent
+) : HcConsole( parent ), Meta( meta ) {}
+
+auto HcAgentConsole::inputEnter(
+    void
+) -> void {
+    auto input = std::string();
+
+    input = Input->text().toStdString();
+    Input->clear();
+
+    if ( Meta->interface.has_value() ) {
+
+        try {
+            Meta->interface.value().attr( "_input_dispatch" )( input );
+        } catch ( py11::error_already_set &eas ) {
+            emit Meta->emitter.ConsoleWrite( eas.what() );
+        }
+    } else {
+        emit Meta->emitter.ConsoleWrite( "[!] No agent script handler registered for this type" );
+    }
 }

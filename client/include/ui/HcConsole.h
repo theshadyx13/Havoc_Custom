@@ -13,18 +13,19 @@ QT_BEGIN_NAMESPACE
 
 class HcConsole : public QWidget
 {
-    QGridLayout* gridLayout  = {};
-    QLabel*      LabelHeader = {};
-    QTextEdit*   Console     = {};
-    QLabel*      LabelBottom = {};
-    QLabel*      LabelInput  = {};
+    Q_OBJECT
+
+    QGridLayout* gridLayout  = nullptr;
+    QTextEdit*   Console     = nullptr;
 
 public:
-    QLineEdit*   Input         = nullptr;
-    py11::object InputCallback = {};
+    QLabel*    LabelHeader = nullptr;
+    QLabel*    LabelBottom = nullptr;
+    QLabel*    LabelInput  = nullptr;
+    QLineEdit* Input       = nullptr;
 
     explicit HcConsole(
-        QWidget* parent
+        QWidget* parent = nullptr
     );
 
     auto setHeaderLabel(
@@ -43,7 +44,7 @@ public:
         const QString& text
     ) -> void;
 
-    auto inputEnter() -> void;
+    virtual auto inputEnter() -> void;
 };
 
 QT_END_NAMESPACE

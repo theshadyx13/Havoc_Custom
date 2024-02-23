@@ -17,8 +17,20 @@
 
 QT_BEGIN_NAMESPACE
 
+class HcPyConsole : public HcConsole {
+    Q_OBJECT
+
+public:
+    explicit HcPyConsole(
+        QWidget* parent = nullptr
+    );
+
+    auto inputEnter() -> void override;
+};
+
 class HcPagePlugins : public QWidget
 {
+Q_OBJECT
 
 public:
     QGridLayout*  gridLayout         = nullptr;
@@ -30,7 +42,7 @@ public:
     QPushButton*  ButtonLoad         = nullptr;
     QLabel*       LabelLoadedPlugins = nullptr;
     QTableWidget* TablePluginsWidget = nullptr;
-    HcConsole*    PyConsole          = nullptr;
+    HcPyConsole*  PyConsole          = nullptr;
     QWidget*      TabPluginStore     = nullptr;
 
     std::optional<py11::object> LoadCallback = {};
@@ -38,6 +50,19 @@ public:
     explicit HcPagePlugins();
 
     auto retranslateUi() -> void;
+
+signals:
+    auto SignalConsoleWrite(
+        const QString& text
+    ) -> void;
+
+    auto SignalScriptEval(
+        const std::string& eval
+    ) -> void;
+
+    auto SignalScriptLoad(
+        const std::string& path
+    ) -> void;
 };
 
 QT_END_NAMESPACE

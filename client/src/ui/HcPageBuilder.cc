@@ -119,6 +119,7 @@ auto HcPageBuilder::AddBuilder(
         builder.instance = object( name );
         builder.instance.attr( "_hc_main" )();
     } catch ( py11::error_already_set &eas ) {
+        py11::gil_scoped_release release;
         Helper::MessageBox(
             QMessageBox::Icon::Critical,
             "Builder loading error",
@@ -126,6 +127,8 @@ auto HcPageBuilder::AddBuilder(
         );
         return;
     }
+
+    py11::gil_scoped_release release;
 
     if ( Builders.empty() ) {
         ComboPayload->clear();
@@ -143,9 +146,11 @@ auto HcPageBuilder::RefreshBuilders() -> void {
         try {
             builder.instance.attr( "refresh" )();
         } catch ( py11::error_already_set &eas ) {
+            py11::gil_scoped_release release;
             spdlog::error( "failed to refresh builder \"{}\": \n{}", builder.name, eas.what() );
             return;
         }
+        py11::gil_scoped_release release;
     }
 }
 
@@ -179,18 +184,23 @@ auto HcPageBuilder::PressedGenerate() -> void
                 /* sanity check input */
                 if ( py11::hasattr( builder.instance, "sanity_check" ) ) {
                     if ( ! builder.instance.attr( "sanity_check" )().cast<bool>() ) {
+                        py11::gil_scoped_release release;
                         spdlog::debug( "sanity check failed. exit and dont send request" );
                         return;
                     }
                 }
 
                 if ( ( config = builder.instance.attr( "generate" )() ).empty() ) {
+                    py11::gil_scoped_release release;
                     return;
                 }
             } catch ( py11::error_already_set &eas ) {
+                py11::gil_scoped_release release;
                 spdlog::error( "failed to refresh builder \"{}\": \n{}", builder.name, eas.what() );
                 return;
             }
+
+            py11::gil_scoped_release release;
 
             break;
         }

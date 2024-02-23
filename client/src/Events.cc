@@ -203,7 +203,6 @@ auto HavocClient::eventDispatch(
     } else {
         spdlog::debug( "invalid event: {} not found", type );
     }
-
 }
 
 

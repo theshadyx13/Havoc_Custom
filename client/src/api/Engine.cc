@@ -6,7 +6,9 @@
 PYBIND11_EMBEDDED_MODULE( _pyhavoc, m ) {
     m.doc() = "python api for havoc framework";
 
-    /* havoc client core api */
+    //
+    // havoc client core api
+    //
     {
         auto core = m.def_submodule(
             "core",
@@ -14,10 +16,10 @@ PYBIND11_EMBEDDED_MODULE( _pyhavoc, m ) {
         );
 
         //
-        // Havoc Script Manager api functions
+        // Havoc I/O Script Manager api functions
         //
-        core.def( "HcScriptManagerConsoleStdOut",      HcScriptManagerConsoleStdOut );
-        core.def( "HcScriptManagerLoadScriptCallback", HcScriptManagerLoadScriptCallback );
+        core.def( "HcIoConsoleWriteStdOut", HcIoConsoleWriteStdOut );
+        core.def( "HcIoScriptLoadCallback", HcIoScriptLoadCallback );
 
         //
         // Havoc Server api functions
@@ -31,7 +33,9 @@ PYBIND11_EMBEDDED_MODULE( _pyhavoc, m ) {
         core.def( "HcListenerAll",          HcListenerAll );
     }
 
-    /* havoc client ui api */
+    //
+    // Havoc client ui api
+    //
     {
         auto ui = m.def_submodule(
             "ui",
@@ -116,6 +120,20 @@ PYBIND11_EMBEDDED_MODULE( _pyhavoc, m ) {
             Helper::MessageBox( ( QMessageBox::Icon ) icon, title, text );
         } );
     }
+
+    //
+    // Havoc agent python api
+    //
+    {
+        auto agent = m.def_submodule(
+            "agent",
+            "havoc client agent api"
+        );
+
+        agent.def( "HcAgentRegisterInterface", HcAgentRegisterInterface );
+        agent.def( "HcAgentConsoleWrite",      HcAgentConsoleWrite      );
+        agent.def( "HcAgentConsoleInput",      []( const py11::object& eval ) { Havoc->Python.Engine->PyEval = eval; } );
+    }
 }
 
 HcPyEngine::HcPyEngine()  = default;
@@ -126,6 +144,8 @@ auto HcPyEngine::run() -> void {
 
     guard = new py11::scoped_interpreter;
 
+    spdlog::debug( "[{}] HcPyEngine::run", QThread::currentThreadId() );
+
     try {
         py11::module_::import( "sys" )
             .attr( "path" )
@@ -134,12 +154,34 @@ auto HcPyEngine::run() -> void {
         py11::module_::import( "pyhavoc" );
     } catch ( py11::error_already_set &eas ) {
         exception = std::string( eas.what() );
-    } catch ( const std::exception &e ) {
-        exception = std::string( e.what() );
     }
 
     if ( ! exception.empty() ) {
         spdlog::error( "failed to import \"python.pyhavoc\": \n{}", exception );
     }
+
+    spdlog::debug( "[{}] HcPyEngine::end", QThread::currentThreadId() );
+
+    while ( true );
+}
+
+auto HcPyEngine::ScriptEval(
+    const std::string& code
+) -> void {
+    spdlog::debug( "[{}] ScriptEval: {}", QThread::currentThreadId(), code );
+
+    try {
+        if ( PyEval.has_value() ) {
+            PyEval.value()( code );
+        }
+    } catch ( py11::error_already_set &eas ) {
+        emit Havoc->Gui->PageScripts->SignalConsoleWrite( eas.what() );
+    }
+}
+
+auto HcPyEngine::ScriptLoad(
+    const std::string& code
+) -> void {
+
 }
 

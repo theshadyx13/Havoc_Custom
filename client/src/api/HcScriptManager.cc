@@ -1,14 +1,14 @@
 #include <Havoc.h>
 #include <api/HcScriptManager.h>
 
-auto HcScriptManagerConsoleStdOut(
+auto HcIoConsoleWriteStdOut(
     const std::string& text
 ) -> void {
-    Havoc->Gui->PageScripts->PyConsole->appendConsole( text.c_str() );
+    emit Havoc->Gui->PageScripts->SignalConsoleWrite( text.c_str() );
 }
 
-auto HcScriptManagerLoadScriptCallback(
+auto HcIoScriptLoadCallback(
     const py11::object& callback
 ) -> void {
-    Havoc->Gui->PageScripts->LoadCallback = callback;
+    // Havoc->Gui->PageScripts->LoadCallback = callback;
 }

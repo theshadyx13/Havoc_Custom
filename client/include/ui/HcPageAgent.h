@@ -13,26 +13,22 @@
 #include <QtWidgets/QTableWidget>
 #include <QtWidgets/QWidget>
 
+#include <ui/HcConsole.h>
+#include <core/HcAgent.h>
+
 QT_BEGIN_NAMESPACE
 
-struct HcAgent {
-    json data;
+class HcAgentConsole : public HcConsole {
+    HcAgent* Meta = nullptr;
 
-    struct {
-        QTableWidgetItem* Uuid;
-        QTableWidgetItem* Internal;
-        QTableWidgetItem* Username;
-        QTableWidgetItem* Hostname;
-        QTableWidgetItem* ProcessPath;
-        QTableWidgetItem* ProcessName;
-        QTableWidgetItem* ProcessId;
-        QTableWidgetItem* ThreadId;
-        QTableWidgetItem* Arch;
-        QTableWidgetItem* System;
-        QTableWidgetItem* Note;
-        QTableWidgetItem* Last;
-    } ui;
-} ;
+public:
+    explicit HcAgentConsole(
+        HcAgent* meta,
+        QWidget* parent = nullptr
+    );
+
+    auto inputEnter() -> void override;
+};
 
 class HcPageAgent : public QWidget
 {
@@ -71,11 +67,27 @@ public:
     auto addTab(
         const QString& name,
         QWidget*       widget
-    ) -> void;
+    ) const -> void;
 
     auto addAgent(
         const json& metadata
     ) -> void;
+
+    auto spawnAgentConsole(
+        const std::string& uuid
+    ) -> void;
+
+    auto handleAgentMenu(
+        const QPoint& pos
+    ) -> void;
+
+    auto handleAgentDoubleClick(
+        const QModelIndex& index
+    ) -> void;
+
+    auto tabCloseRequested(
+        int index
+    ) const -> void;
 };
 
 QT_END_NAMESPACE

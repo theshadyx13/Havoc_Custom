@@ -144,6 +144,7 @@ auto HcListenerDialog::save() -> void {
 
                 spdlog::debug( "data -> {}", data.dump() );
             } catch ( py11::error_already_set &eas ) {
+                py11::gil_scoped_release release;
                 Helper::MessageBox(
                     QMessageBox::Icon::Critical,
                     "Listener saving error",
@@ -152,6 +153,7 @@ auto HcListenerDialog::save() -> void {
                 return;
             }
 
+            py11::gil_scoped_release release;
             found = true;
             break;
         }
@@ -230,18 +232,13 @@ auto HcListenerDialog::AddProtocol(
         protocol.instance = object();
         protocol.instance.attr( "_hc_set_name" )( name );
         protocol.instance.attr( "_hc_main" )();
+        py11::gil_scoped_release release;
     } catch ( py11::error_already_set &eas ) {
+        py11::gil_scoped_release release;
         Helper::MessageBox(
             QMessageBox::Icon::Critical,
             "Listener loading error",
             std::string( eas.what() )
-        );
-        return;
-    } catch ( const std::exception &e ) {
-        Helper::MessageBox(
-            QMessageBox::Icon::Critical,
-            "Listener loading error",
-            std::string( e.what() )
         );
         return;
     }
