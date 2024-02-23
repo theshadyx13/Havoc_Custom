@@ -1,7 +1,7 @@
 from _pyhavoc import core
 
-import sys
 import os
+import sys
 import importlib.util
 
 class HcPyScriptMngrStdOutErrHandler:
@@ -9,13 +9,13 @@ class HcPyScriptMngrStdOutErrHandler:
         return
 
     def write( self, data ):
-        core.HcScriptManagerConsoleStdOut( data )
+        core.HcIoConsoleWriteStdOut( data )
 
 ##
 ## Callback function once the user decides
 ## to load a script into the client
 ##
-@core.HcScriptManagerLoadScriptCallback
+@core.HcIoScriptLoadCallback
 def _HcPyScriptLoad(
     _script_path: str
 ) -> None:
@@ -28,6 +28,7 @@ def _HcPyScriptLoad(
     script_spec.loader.exec_module( module )
 
     return
+
 
 ##
 ## redirect StdOut and StdErr
