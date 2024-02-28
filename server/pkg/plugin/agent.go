@@ -30,6 +30,33 @@ func (s *PluginSystem) AgentGenerate(ctx map[string]any, config map[string]any) 
 	return name, bin, err
 }
 
+func (s *PluginSystem) AgentExecute(atype, uuid string, data map[string]any, wait bool) (map[string]any, error) {
+	var (
+		resp map[string]any
+		err  error
+		ext  *Plugin
+	)
+
+	err = errors.New("agent not found")
+
+	s.loaded.Range(func(key, value any) bool {
+		ext = value.(*Plugin)
+
+		if ext.Type != PluginTypeAgent {
+			return true
+		}
+
+		if atype == ext.AgentRegister()["name"] {
+			resp, err = ext.AgentExecute(uuid, data, wait)
+			return false
+		}
+
+		return true
+	})
+
+	return resp, err
+}
+
 func (s *PluginSystem) AgentProcess(ctx map[string]any, request []byte) ([]byte, error) {
 	var (
 		err error

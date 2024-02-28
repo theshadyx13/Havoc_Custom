@@ -38,6 +38,7 @@ type teamserver interface {
 	ListenerEvent(protocol string, event map[string]any) (map[string]any, error)
 
 	AgentGenerate(ctx map[string]any, config map[string]any) (string, []byte, error)
+	AgentExecute(uuid string, data map[string]any, wait bool) (map[string]any, error)
 }
 
 type ServerApi struct {
@@ -60,8 +61,8 @@ func NewServerApi(teamserver teamserver) (*ServerApi, error) {
 
 	gin.SetMode(gin.ReleaseMode)
 
-	api.Engine = gin.New()
 	api.teamserver = teamserver
+	api.Engine = gin.New()
 
 	//
 	// set api endpoints
@@ -80,6 +81,7 @@ func NewServerApi(teamserver teamserver) (*ServerApi, error) {
 	// agent endpoints
 	//
 	api.Engine.POST("/api/agent/build", api.agentBuild)
+	api.Engine.POST("/api/agent/execute", api.agentExecute)
 
 	//
 	// websocket event endpoint

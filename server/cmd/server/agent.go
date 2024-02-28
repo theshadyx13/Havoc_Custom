@@ -55,6 +55,23 @@ func (t *Teamserver) AgentGenerate(ctx map[string]any, config map[string]any) (s
 	return "", nil, errors.New("agent to generate not found")
 }
 
+func (t *Teamserver) AgentExecute(uuid string, data map[string]any, wait bool) (map[string]any, error) {
+	var (
+		agent Agent
+		value any
+		ok    bool
+	)
+
+	// load stored agent by uuid from map
+	if value, ok = t.agents.Load(uuid); ok {
+		agent = value.(Agent)
+		fmt.Println(agent)
+		return t.plugins.AgentExecute(agent._type, uuid, data, wait)
+	}
+
+	return nil, errors.New("agent by uuid not found")
+}
+
 func (t *Teamserver) AgentBuildLog(context map[string]any, format string, args ...any) {
 	var (
 		user string

@@ -48,6 +48,12 @@ type Handler struct {
 	Data map[string]any `json:"data"`
 }
 
+type Agent struct {
+	uuid  string
+	_type string
+	data  map[string]any
+}
+
 type Teamserver struct {
 	Flags  TeamserverFlags
 	Server *api.ServerApi
