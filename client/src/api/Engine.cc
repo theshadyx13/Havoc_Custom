@@ -18,19 +18,19 @@ PYBIND11_EMBEDDED_MODULE( _pyhavoc, m ) {
         //
         // Havoc I/O Script Manager api functions
         //
-        core.def( "HcIoConsoleWriteStdOut", HcIoConsoleWriteStdOut );
-        core.def( "HcIoScriptLoadCallback", HcIoScriptLoadCallback );
+        core.def( "HcIoConsoleWriteStdOut", HcIoConsoleWriteStdOut, py::call_guard<py::gil_scoped_release>() );
+        core.def( "HcIoScriptLoadCallback", HcIoScriptLoadCallback, py::call_guard<py::gil_scoped_release>() );
 
         //
         // Havoc Server api functions
         //
-        core.def( "HcServerApiSend", HcServerApiSend );
+        core.def( "HcServerApiSend", HcServerApiSend, py::call_guard<py::gil_scoped_release>() );
 
         //
         // Havoc Listener api functions
         //
-        core.def( "HcListenerProtocolData", HcListenerProtocolData );
-        core.def( "HcListenerAll",          HcListenerAll );
+        core.def( "HcListenerProtocolData", HcListenerProtocolData, py::call_guard<py::gil_scoped_release>() );
+        core.def( "HcListenerAll",          HcListenerAll, py::call_guard<py::gil_scoped_release>() );
     }
 
     //
@@ -45,7 +45,6 @@ PYBIND11_EMBEDDED_MODULE( _pyhavoc, m ) {
         //
         // Havoc Ui functions and utilities
         //
-
         ui.def( "HcUiPayloadBuilderObjName", [] () -> py11::str {
             return ( Havoc->Gui->PagePayload->objectName().toStdString() );
         } );
@@ -118,7 +117,7 @@ PYBIND11_EMBEDDED_MODULE( _pyhavoc, m ) {
             const std::string& text
         ) {
             Helper::MessageBox( ( QMessageBox::Icon ) icon, title, text );
-        } );
+        }, py::call_guard<py::gil_scoped_release>() );
     }
 
     //
@@ -131,8 +130,9 @@ PYBIND11_EMBEDDED_MODULE( _pyhavoc, m ) {
         );
 
         agent.def( "HcAgentRegisterInterface", HcAgentRegisterInterface );
-        agent.def( "HcAgentConsoleWrite",      HcAgentConsoleWrite      );
+        agent.def( "HcAgentConsoleWrite",      HcAgentConsoleWrite, py::call_guard<py::gil_scoped_release>() );
         agent.def( "HcAgentConsoleInput",      []( const py11::object& eval ) { Havoc->Python.Engine->PyEval = eval; } );
+        agent.def( "HcAgentExecute",           HcAgentExecute, py::call_guard<py::gil_scoped_release>() );
     }
 }
 
@@ -143,8 +143,6 @@ auto HcPyEngine::run() -> void {
     auto exception = std::string();
 
     guard = new py11::scoped_interpreter;
-
-    spdlog::debug( "[{}] HcPyEngine::run", QThread::currentThreadId() );
 
     try {
         py11::module_::import( "sys" )
@@ -160,28 +158,8 @@ auto HcPyEngine::run() -> void {
         spdlog::error( "failed to import \"python.pyhavoc\": \n{}", exception );
     }
 
-    spdlog::debug( "[{}] HcPyEngine::end", QThread::currentThreadId() );
-
-    while ( true );
+    //
+    // release gil
+    //
+    py11::gil_scoped_release release;
 }
-
-auto HcPyEngine::ScriptEval(
-    const std::string& code
-) -> void {
-    spdlog::debug( "[{}] ScriptEval: {}", QThread::currentThreadId(), code );
-
-    try {
-        if ( PyEval.has_value() ) {
-            PyEval.value()( code );
-        }
-    } catch ( py11::error_already_set &eas ) {
-        emit Havoc->Gui->PageScripts->SignalConsoleWrite( eas.what() );
-    }
-}
-
-auto HcPyEngine::ScriptLoad(
-    const std::string& code
-) -> void {
-
-}
-

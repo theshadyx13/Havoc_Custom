@@ -20,6 +20,8 @@ def _HcPyScriptLoad(
     _script_path: str
 ) -> None:
 
+    print( f"[*] trying to load script path: {_script_path}" )
+
     script_name = os.path.splitext( os.path.basename( _script_path ) )[ 0 ]
     module_name = "HcScript." + script_name
     script_spec = importlib.util.spec_from_file_location( module_name, _script_path )
@@ -28,7 +30,6 @@ def _HcPyScriptLoad(
     script_spec.loader.exec_module( module )
 
     return
-
 
 ##
 ## redirect StdOut and StdErr

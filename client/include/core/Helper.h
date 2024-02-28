@@ -4,6 +4,10 @@
 #include <Common.h>
 
 namespace Helper {
+    inline auto IsMainThread() -> bool {
+        return QThread::currentThread() == QCoreApplication::instance()->thread();
+    }
+
     auto MessageBox(
         QMessageBox::Icon Icon,
         std::string title,

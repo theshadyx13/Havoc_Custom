@@ -10,5 +10,5 @@ auto HcIoConsoleWriteStdOut(
 auto HcIoScriptLoadCallback(
     const py11::object& callback
 ) -> void {
-    // Havoc->Gui->PageScripts->LoadCallback = callback;
+    Havoc->Gui->PageScripts->LoadCallback = callback;
 }

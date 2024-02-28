@@ -150,6 +150,7 @@ auto HavocClient::eventDispatch(
 
         spdlog::debug( "Agent: {}", data.dump() );
 
+        spdlog::debug( "PyGILState_Check() -> {}", PyGILState_Check() );
         Gui->PagePayload->RefreshBuilders();
         Gui->PageAgent->addAgent( data );
     }
@@ -204,7 +205,5 @@ auto HavocClient::eventDispatch(
         spdlog::debug( "invalid event: {} not found", type );
     }
 }
-
-
 
 

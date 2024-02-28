@@ -83,8 +83,6 @@ auto HcConsole::inputEnter() -> void {
         expt = std::string( eas.what() );
     }
 
-    py11::gil_scoped_release release;
-
     if ( ! expt.empty() ) {
         appendConsole( expt.c_str() );
     }

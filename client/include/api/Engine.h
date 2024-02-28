@@ -7,6 +7,12 @@
 #include <api/HcScriptManager.h>
 #include <api/HcAgent.h>
 
+inline auto HcPythonReleaseGil() -> void {
+    if ( PyGILState_Check() ) {
+        PyEval_SaveThread();
+    }
+}
+
 class HcPyEngine : public QThread {
     Q_OBJECT
 
@@ -20,15 +26,6 @@ public:
     ~HcPyEngine();
 
     auto run() -> void;
-
-public slots:
-    auto ScriptEval(
-        const std::string& code
-    ) -> void;
-
-    auto ScriptLoad(
-        const std::string& path
-    ) -> void;
 };
 
 #endif

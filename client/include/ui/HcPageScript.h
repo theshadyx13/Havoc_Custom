@@ -51,17 +51,13 @@ public:
 
     auto retranslateUi() -> void;
 
+    auto LoadScript(
+        const std::string& path
+    ) -> void;
+
 signals:
     auto SignalConsoleWrite(
         const QString& text
-    ) -> void;
-
-    auto SignalScriptEval(
-        const std::string& eval
-    ) -> void;
-
-    auto SignalScriptLoad(
-        const std::string& path
     ) -> void;
 };
 

@@ -182,18 +182,20 @@ auto HavocClient::Main(
     Profile.Token = data[ "token" ].get<std::string>();
 
     //
-    // setup Python thread
+    // create main window
     //
-    Python.Thread = new QThread;
-    Python.Engine = new HcPyEngine();
-    Python.Engine->moveToThread( Python.Thread );
-    QObject::connect( Python.Thread, & QThread::started, Python.Engine, & HcPyEngine::run );
-    Python.Thread->start();
-
-    /* create main window */
     Gui = new HcMainWindow;
     Gui->renderWindow();
     Gui->setStyleSheet( getStyleSheet() );
+
+    //
+    // setup Python thread
+    //
+    // Python.Thread = new QThread;
+    Python.Engine = new HcPyEngine();
+    // Python.Engine->moveToThread( Python.Thread );
+    // QObject::connect( Python.Thread, & QThread::started, Python.Engine, & HcPyEngine::run );
+    Python.Engine->run();
 
     //
     // merely debug purpose loading the scripts at startup
@@ -201,18 +203,14 @@ auto HavocClient::Main(
     // TODO: remove this in future or
     //       move it to the config file
     //
-    /*if ( Gui->PageScripts->LoadCallback.has_value() ) {
-        Gui->PageScripts->LoadCallback.value()( "tests/python/kaine_payload.py" );
-        Gui->PageScripts->LoadCallback.value()( "tests/python/listener_http.py" );
-    }*/
+    Gui->PageScripts->LoadScript( "tests/python/kaine_payload.py" );
+    Gui->PageScripts->LoadScript( "tests/python/listener_http.py" );
 
     //
     // set up the event thread and connect to the
     // server and dispatch all the incoming events
     //
     setupThreads();
-
-    emit Havoc->Gui->PageScripts->SignalScriptEval( "print( 'testtesttest' )" );
 
     QApplication::exec();
 
@@ -232,27 +230,39 @@ auto HavocClient::Exit() -> void {
 
 auto HavocClient::ApiSend(
     const std::string& endpoint,
-    const json&        body
+    const json&        body,
+    const bool         keep_alive
 ) const -> httplib::Result {
-
-    /* create http client */
     auto Http   = httplib::Client( "https://" + Profile.Host + ":" + Profile.Port );
     auto Result = httplib::Result();
     auto Error  = std::string( "Failed to send api request: " );
 
+    //
+    // only way to keep the connection alive even while we have
+    // "keep-alive" enabled it will shut down after 5 seconds
+    //
+    if ( keep_alive ) {
+        Http.set_read_timeout( INT32_MAX );
+    }
+
+    //
+    // configure the client
+    //
+    Http.set_keep_alive( keep_alive );
     Http.enable_server_certificate_verification( false );
     Http.set_default_headers( {
         { "x-havoc-token", Havoc->Profile.Token }
     } );
 
-    /* send request */
+    //
+    // send the request to our endpoint
+    //
     Result = Http.Post( endpoint, body.dump(), "application/json" );
 
     if ( HttpErrorToString( Result.error() ).has_value() ) {
         spdlog::error( "Failed to send login request: {}", HttpErrorToString( Result.error() ).value() );
     }
 
-END:
     return Result;
 }
 
@@ -261,8 +271,8 @@ auto HavocClient::eventClosed() -> void {
     Exit();
 }
 
-auto HavocClient::getServer()      -> std::string { return Profile.Host + ":" + Profile.Port; }
-auto HavocClient::getServerToken() -> std::string { return Profile.Token; }
+auto HavocClient::Server() const -> std::string { return Profile.Host + ":" + Profile.Port; }
+auto HavocClient::Token()  const -> std::string { return Profile.Token; }
 
 auto HavocClient::eventHandle(
     const QByteArray& request

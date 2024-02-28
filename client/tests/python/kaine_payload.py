@@ -6,7 +6,8 @@ from PySide6.QtGui import *
 from PySide6.QtWidgets import *
 
 import time
-
+import base64
+import argparse
 
 @pyhavoc.ui.HcUiBuilderRegisterView( "Kaine" )
 class HcKaineBuilder( pyhavoc.ui.HcPayloadView ):
@@ -389,18 +390,169 @@ class HcKaineBuilder( pyhavoc.ui.HcPayloadView ):
     def payload( self, payload: bytes ) -> None:
         pass
 
+##
+## https://stackoverflow.com/questions/32888815/max-help-position-is-not-works-in-python-argparse-library
+##
+class MyFormatter(argparse.HelpFormatter):
+    """
+    Corrected _max_action_length for the indenting of subactions
+    """
+    def add_argument(self, action):
+        if action.help is not argparse.SUPPRESS:
+
+            # find all invocations
+            get_invocation = self._format_action_invocation
+            invocations = [get_invocation(action)]
+            current_indent = self._current_indent
+            for subaction in self._iter_indented_subactions(action):
+                # compensate for the indent that will be added
+                indent_chg = self._current_indent - current_indent
+                added_indent = 'x'*indent_chg
+                invocations.append(added_indent+get_invocation(subaction))
+            # print('inv', invocations)
+
+            # update the maximum item length
+            invocation_length = max([len(s) for s in invocations])
+            action_length = invocation_length + self._current_indent
+            self._action_max_length = max(self._action_max_length,
+                                          action_length)
+
+            # add the item to the list
+            self._add_item(self._format_action, [action])
 
 @pyhavoc.agent.HcAgentRegisterInterface( "Kaine" )
 class HcKaine( pyhavoc.agent.HcAgent ):
 
     def __init__( self, *args, **kwargs ):
         super().__init__( *args, **kwargs )
+        return
 
-    def input_dispatch( self, input: str ):
-        self.console_print( f"[{self.agent_uuid()}] >>> " + input )
+    def arg_setup_commands( self ) -> argparse.ArgumentParser:
 
-        time.sleep( 1 )
+        formatter = lambda prog: MyFormatter(prog, max_help_position=40,width=100)
+        parser    = argparse.ArgumentParser( prog=argparse.SUPPRESS,
+                                             usage=argparse.SUPPRESS,
+                                             formatter_class=formatter,
+                                             add_help=False, exit_on_error=False )
 
-        self.console_print( "finished" )
+        main_commands = parser.add_subparsers( title=argparse.SUPPRESS, metavar="" )
+        main_commands.add_parser( 'help', help='show available help and usage of commands' )
+        main_commands.add_parser( 'object-execute', help='execute an object file in memory' )
+        main_commands.add_parser( 'checkin', help='force a checkin request' )
+
+        return parser
+
+    def arg_error( self, message ):
+
+        self.console_log( f"[ERROR] message: {message}" )
 
         return
+
+    def input_dispatch( self, input: str ):
+        self.console_print( f"[Kaine] >>> " + input )
+
+        ##
+        ## setup available commands
+        ##
+        parser   = self.arg_setup_commands()
+        commands = input.split()
+
+        try:
+            parser.parse_known_args( commands )
+        except argparse.ArgumentError:
+            self.console_log( f"[ERROR] invalid command: {input}" )
+            return
+
+
+        match commands[ 0 ]:
+            case "help":
+                self.console_log( parser.format_help() )
+
+            case "object-execute":
+                self.console_log( "[+] trying to execute IoObjectExecute" )
+                self.console_log( f"{self.object_execute( b'test', wait_to_finish=True )}" )
+                self.console_log( "[*] finished executing IoObjectExecute" )
+
+            case _:
+                self.console_log( f"[ERROR] invalid command: {input}" )
+
+        return
+
+    def object_execute(
+        self,
+        object        : bytes,
+        entry         : str   = "go",
+        parameters    : any   = None,
+        is_module     : bool  = False,
+        base_address  : int   = 0,
+        wait_to_finish: bool  = False
+    ) -> any:
+        """
+        execute an object file in memory
+
+        :param object:
+            object file bytes to load and execute in memory
+
+        :param entry:
+             entry point function name to execute after
+             loading the object file into memory
+
+        :param parameters:
+            arguments to pass to the entry point function
+
+        :param is_module:
+            if this argument is set to true then the object file
+            won't be released from memory and is going to return
+            the handle/address of the object file for further
+            function invocation.
+            be aware that if this flag is specified it is going
+            to block the current execution and wait til the file
+            has been loaded into memory to return the handle.
+
+        :param base_address:
+            base address of where to write the object file to.
+            can be ann address from a stomped module or virtual
+            private memory.
+
+        :param wait_to_finish:
+            wait til the execution of the bof finished
+
+        :return:
+            status of executing the object file
+
+        """
+
+        wait: bool  = wait_to_finish
+        resp: dict  = {}
+        args: bytes = b''
+
+        ##
+        ## we have to wait til we receive back the
+        ## handle of the object file in memory
+        ##
+        if is_module:
+           wait = True
+
+        if type( parameters ) == list:
+            args = b''
+        elif type( parameters ) == bytes:
+            args = parameters
+
+        ##
+        ## task the agent to invoke an object file
+        ##
+        resp = self.agent_execute( {
+                "command":   "IoObjectExecute",
+                "arguments": {
+                    "object" : base64.b64encode( object ).decode( 'utf-8' ),
+                    "entry"  : entry,
+                    "args"   : base64.b64encode( args ).decode( 'utf-8' ),
+                    "module" : is_module,
+                    "address": base_address
+                }
+            },
+            wait
+        )
+
+        return resp
+

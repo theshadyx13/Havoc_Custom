@@ -14,4 +14,10 @@ auto HcAgentConsoleWrite(
     const std::string& content
 ) -> void;
 
+auto HcAgentExecute(
+    const std::string& uuid,
+    const json&        data,
+    const bool         wait
+) -> json;
+
 #endif //HAVOCCLIENT_API_HCAGENT_H

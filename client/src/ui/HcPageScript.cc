@@ -87,8 +87,6 @@ HcPagePlugins::HcPagePlugins()
     // signals
     //
     QObject::connect( this, & HcPagePlugins::SignalConsoleWrite, PyConsole, & HcPyConsole::appendConsole );
-    QObject::connect( this, & HcPagePlugins::SignalScriptEval, Havoc->Python.Engine, & HcPyEngine::ScriptEval );
-    QObject::connect( this, & HcPagePlugins::SignalScriptLoad, Havoc->Python.Engine, & HcPyEngine::ScriptLoad );
 
     QObject::connect( ButtonLoad, &QPushButton::clicked, this, [&] () {
         auto FileDialog = QFileDialog();
@@ -133,6 +131,21 @@ auto HcPagePlugins::retranslateUi() -> void {
     LabelLoadedPlugins->setText( "Loaded: 0" );
 }
 
+auto HcPagePlugins::LoadScript(
+    const std::string& path
+) -> void {
+
+    if ( LoadCallback.has_value() ) {
+        try {
+            LoadCallback.value()( path );
+        } catch ( py11::error_already_set &eas ) {
+            spdlog::error( "failed to load script {}: \n{}", path, eas.what() );
+        }
+    } else {
+        spdlog::debug( "PageScripts->LoadCallback not set" );
+    }
+}
+
 HcPyConsole::HcPyConsole(
     QWidget* parent
 ) : HcConsole( parent ) {}
@@ -149,5 +162,5 @@ auto HcPyConsole::inputEnter() -> void
 
     appendConsole( ( ">>> " + input ).c_str() );
 
-    emit Havoc->Gui->PageScripts->SignalScriptEval( input );
+    // emit Havoc->Gui->PageScripts->SignalScriptEval( input );
 }

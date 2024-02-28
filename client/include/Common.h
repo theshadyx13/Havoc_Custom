@@ -28,6 +28,7 @@
 #include <QFileDialog>
 #include <QThread>
 #include <QMenu>
+#include <QtConcurrent/QtConcurrent>
 
 /* define namepsace */
 using     json = nlohmann::json;

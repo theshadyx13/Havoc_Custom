@@ -142,14 +142,24 @@ auto HcPageBuilder::AddBuilder(
 }
 
 auto HcPageBuilder::RefreshBuilders() -> void {
+    //
+    // we don't hold the GIL
+    //
+    if ( ! PyGILState_Check() ) {
+        return;
+    }
+
     for ( auto& builder : Builders ) {
         try {
             builder.instance.attr( "refresh" )();
         } catch ( py11::error_already_set &eas ) {
             py11::gil_scoped_release release;
-            spdlog::error( "failed to refresh builder \"{}\": \n{}", builder.name, eas.what() );
+            spdlog::error( "[py11::error_already_set] failed to refresh builder \"{}\": \n{}", builder.name, eas.what() );
             return;
+        } catch ( std::exception& e ) {
+            spdlog::error( "[std::exception] failed to refresh builder \"{}\": \n{}", builder.name, e.what() );
         }
+
         py11::gil_scoped_release release;
     }
 }

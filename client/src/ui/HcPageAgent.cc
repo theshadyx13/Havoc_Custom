@@ -133,7 +133,7 @@ auto HcPageAgent::addTab(
         Splitter->handle( 1 )->setCursor( Qt::SplitVCursor );
     }
 
-    AgentTab->addTab( widget, name );
+    AgentTab->setCurrentIndex( AgentTab->addTab( widget, name ) );
 }
 
 inline auto HcTableWidget(
@@ -213,14 +213,21 @@ auto HcPageAgent::addAgent(
     agent->interface = std::nullopt;
     if ( auto interface = Havoc->AgentObject( agent->type ) ) {
         if ( interface.has_value() ) {
+            py11::gil_scoped_acquire gil;
+
             try {
                 agent->interface = interface.value()( agent->uuid, agent->type, metadata[ "meta" ] );
             } catch ( py11::error_already_set &eas ) {
                 spdlog::error( "failed to invoke agent interface [uuid: {}] [type: {}]: {}", agent->uuid, agent->type, eas.what() );
             }
-            py11::gil_scoped_release release;
+
+            //
+            // we don't need it anymore so lets release it
+            //
+            // HcPythonReleaseGil();
         }
     }
+
 
     agents.push_back( agent );
 
@@ -282,10 +289,24 @@ auto HcPageAgent::spawnAgentConsole(
 ) -> void {
     for ( auto& agent : agents ) {
         if ( agent->uuid == uuid ) {
-            auto user = agent->data[ "meta" ][ "user" ].get<std::string>();
+            auto user  = agent->data[ "meta" ][ "user" ].get<std::string>();
+            auto title = QString( "[%1] %2" ).arg( uuid.c_str() ).arg( user.c_str() );
 
+            //
+            // check if we already have the agent console open.
+            // if yes then just focus on the opened tab already
+            //
+            for ( int i = 0; i < AgentTab->count(); i++ ) {
+                if ( AgentTab->widget( i ) == agent->console ) {
+                    AgentTab->setCurrentIndex( i );
+                    return;
+                }
+            }
 
-            addTab( QString( "[%1] %2" ).arg( uuid.c_str() ).arg( user.c_str() ), agent->console );
+            //
+            // no tab with the title name found so lets just add a new one
+            //
+            addTab( title, agent->console );
 
             break;
         }
@@ -321,14 +342,24 @@ auto HcAgentConsole::inputEnter(
     input = Input->text().toStdString();
     Input->clear();
 
-    if ( Meta->interface.has_value() ) {
+    HcPythonReleaseGil();
 
-        try {
-            Meta->interface.value().attr( "_input_dispatch" )( input );
-        } catch ( py11::error_already_set &eas ) {
-            emit Meta->emitter.ConsoleWrite( eas.what() );
+    //
+    // invoke the command in a separate thread
+    //
+    QtConcurrent::run( []( HcAgent* agent, const std::string& input ) {
+        py11::gil_scoped_acquire gil;
+
+        if ( agent->interface.has_value() ) {
+            try {
+                agent->interface.value().attr( "_input_dispatch" )( input );
+            } catch ( py11::error_already_set &eas ) {
+                emit agent->emitter.ConsoleWrite( eas.what() );
+            }
+        } else {
+            emit agent->emitter.ConsoleWrite( "[!] No agent script handler registered for this type" );
         }
-    } else {
-        emit Meta->emitter.ConsoleWrite( "[!] No agent script handler registered for this type" );
-    }
+
+        HcPythonReleaseGil();
+    }, Meta, input );
 }

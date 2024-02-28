@@ -74,10 +74,10 @@ public:
     auto Exit() -> void;
 
     /* get server address */
-    auto getServer() -> std::string;
+    auto Server() const -> std::string;
 
     /* get server connection token */
-    auto getServerToken() -> std::string;
+    auto Token() const -> std::string;
 
     auto getStyleSheet() -> QByteArray;
 
@@ -147,7 +147,8 @@ public:
     /* send request to api endpoint */
     auto ApiSend(
         const std::string& endpoint,
-        const json&        body
+        const json&        body,
+        const bool         keep_alive = false
     ) const -> httplib::Result;
 
 Q_SIGNALS:
