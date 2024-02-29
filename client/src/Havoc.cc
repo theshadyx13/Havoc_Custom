@@ -243,6 +243,8 @@ auto HavocClient::ApiSend(
     //
     if ( keep_alive ) {
         Http.set_read_timeout( INT32_MAX );
+        Http.set_connection_timeout( INT32_MAX );
+        Http.set_write_timeout( INT32_MAX );
     }
 
     //

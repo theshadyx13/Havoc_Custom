@@ -486,7 +486,7 @@ class HcKaine( pyhavoc.agent.HcAgent ):
         is_module     : bool  = False,
         base_address  : int   = 0,
         wait_to_finish: bool  = False
-    ) -> any:
+    ) -> dict:
         """
         execute an object file in memory
 
@@ -553,6 +553,13 @@ class HcKaine( pyhavoc.agent.HcAgent ):
             },
             wait
         )
+
+        ##
+        ## if there is something to parse then
+        ## lets parse it and return it
+        ##
+        if "return" in resp:
+            resp[ "return" ] = base64.b64decode( resp[ "return" ].encode( 'utf-8' ) )
 
         return resp
 

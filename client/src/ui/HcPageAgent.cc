@@ -360,6 +360,6 @@ auto HcAgentConsole::inputEnter(
             emit agent->emitter.ConsoleWrite( "[!] No agent script handler registered for this type" );
         }
 
-        HcPythonReleaseGil();
+        // HcPythonReleaseGil();
     }, Meta, input );
 }
