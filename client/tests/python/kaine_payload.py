@@ -9,6 +9,8 @@ import time
 import base64
 import argparse
 
+from os.path import exists
+
 @pyhavoc.ui.HcUiBuilderRegisterView( "Kaine" )
 class HcKaineBuilder( pyhavoc.ui.HcPayloadView ):
 
@@ -420,11 +422,73 @@ class MyFormatter(argparse.HelpFormatter):
             # add the item to the list
             self._add_item(self._format_action, [action])
 
+class HcTableDict( dict ):
+
+    def __init__( self, kaine_agent ):
+        super(HcTableDict, self).__init__()
+
+        self.kaine = kaine_agent
+
+
+    def __setitem__(self, key, item):
+        self.__dict__[key] = item
+
+    def __getitem__(self, key):
+        return self.__dict__[key]
+
+    def __repr__(self):
+        return repr(self.__dict__)
+
+    def __len__(self):
+        return len(self.__dict__)
+
+    def __delitem__(self, key):
+        del self.__dict__[key]
+
+    def clear(self):
+        return self.__dict__.clear()
+
+    def copy(self):
+        return self.__dict__.copy()
+
+    def has_key(self, k):
+        return k in self.__dict__
+
+    def update(self, *args, **kwargs):
+        return self.__dict__.update(*args, **kwargs)
+
+    def keys(self):
+        return self.__dict__.keys()
+
+    def values(self):
+        return self.__dict__.values()
+
+    def items(self):
+        return self.__dict__.items()
+
+    def pop(self, *args):
+        return self.__dict__.pop(*args)
+
+    def __cmp__(self, dict_):
+        return self.__cmp__(self.__dict__, dict_)
+
+    def __contains__(self, item):
+        return item in self.__dict__
+
+    def __iter__(self):
+        return iter(self.__dict__)
+
+    def __unicode__(self):
+        return unicode(repr(self.__dict__))
+
+
 @pyhavoc.agent.HcAgentRegisterInterface( "Kaine" )
 class HcKaine( pyhavoc.agent.HcAgent ):
 
     def __init__( self, *args, **kwargs ):
         super().__init__( *args, **kwargs )
+
+
         return
 
     def arg_setup_commands( self ) -> argparse.ArgumentParser:
@@ -443,14 +507,32 @@ class HcKaine( pyhavoc.agent.HcAgent ):
         return parser
 
     def arg_error( self, message ):
+        self.console_print( f"[ERROR] message: {message}" )
+        return
 
-        self.console_log( f"[ERROR] message: {message}" )
+    def console_log( self, text ):
+        self.agent_execute( {
+            "command": "KnConsole",
+            "arguments": {
+                "type"   : "console",
+                "output" : text
+            }
+        }, True )
+
+        return
+
+    def console_input( self, text ):
+        self.agent_execute( {
+            "command": "KnConsole",
+            "arguments": {
+                "type"   : "input",
+                "output" : text
+            }
+        }, True )
 
         return
 
     def input_dispatch( self, input: str ):
-        self.console_print( f"[Kaine] >>> " + input )
-
         ##
         ## setup available commands
         ##
@@ -460,38 +542,148 @@ class HcKaine( pyhavoc.agent.HcAgent ):
         try:
             parser.parse_known_args( commands )
         except argparse.ArgumentError:
-            self.console_log( f"[ERROR] invalid command: {input}" )
+            self.console_print( "[Kaine] >>> " + input )
+            self.console_print( f"[ERROR] invalid command: {input}" )
             return
 
 
         match commands[ 0 ]:
             case "help":
-                self.console_log( parser.format_help() )
+                self.console_print( "[Kaine] >>> " + input )
+                self.console_print( parser.format_help() )
 
             case "object-execute":
-                self.console_log( "[+] trying to execute IoObjectExecute" )
-                self.console_log( f"{self.object_execute( b'test', wait_to_finish=True )}" )
-                self.console_log( "[*] finished executing IoObjectExecute" )
+                task_uuid = 0
+                task_hex  = ''
+                handle    = None
+                object    = b''
+                file_path = ' '.join(commands[1:])
+                ctx       = dict()
+
+                self.console_input( input )
+
+                ##
+                ## check if object file exists
+                ##
+                if exists( file_path ) is False:
+                    self.console_log( f"object file not found: {file_path}" )
+                    return
+
+                ##
+                ## read object file from disk
+                ##
+                handle = open( file_path, 'rb' )
+                object = handle.read()
+                handle.close()
+                handle = 0
+
+                ##
+                ## generate task uuid to track
+                ##
+                task_uuid = self.task_generate( True )
+                task_hex  = format(task_uuid, 'x')
+
+                ##
+                ## inform the operator that we generated
+                ## a task to execute the object file
+                ##
+                self.console_log( f"({ task_hex }) tasked agent to execute object file: { file_path }" )
+
+                ##
+                ## invoke object file
+                ##
+                ctx = self.object_execute( object, wait_to_finish=True, task_uuid=task_uuid, is_module=True )
+
+                ##
+                ## check if status is STATUS_SUCCESS
+                ##
+                if ctx[ 'status' ] == 0:
+                    self.console_log( f"({ task_hex }) successful executed object file" )
+
+                    ##
+                    ## check if we received a handle back
+                    ##
+                    if 'handle' in ctx:
+                        handle = ctx[ 'handle' ]
+                        self.console_log( f"object has been cached in memory [handle: { hex( handle ) }]" )
+                else:
+                    self.console_log( f"({ task_hex }) failed to execute object file [status: { ctx[ 'status' ] }] [error: { ctx[ 'return' ] }]" )
+
+                ##
+                ## execute the same entrypoint with the already loaded bof
+                ##
+                if handle != 0:
+                    self.console_log( f"executing the already loaded bof [handle: { hex( handle ) }]" )
+                    ctx = self.object_execute( handle, wait_to_finish=True, task_uuid=task_uuid )
+
+                    ##
+                    ## check if status is STATUS_SUCCESS
+                    ##
+                    if ctx[ 'status' ] == 0:
+                        self.console_log( f"({ task_hex }) successful executed object file" )
+                    else:
+                        self.console_log( f"({ task_hex }) failed to execute object file [status: { ctx[ 'status' ] }] [error: { ctx[ 'return' ] }]" )
+                ##
+                ## finished executing and
+                ## close tasking channel
+                ##
+                self.task_delete( task_uuid )
 
             case _:
-                self.console_log( f"[ERROR] invalid command: {input}" )
+                self.console_print( f"[ERROR] invalid command: {input}" )
 
         return
 
+    def task_generate(
+        self,
+        channel: bool = False
+    ) -> int:
+        ##
+        ## try to generate task uuid
+        ##
+        resp = self.agent_execute( {
+            "command": "KnTaskGenerate",
+            "arguments": {
+                "channel": channel
+            }
+        }, True )
+
+        return resp[ 'task-uuid' ]
+
+    def task_delete(
+        self,
+        task_uuid: int
+    ) -> bool:
+
+        ##
+        ## try to generate task uuid
+        ##
+        resp = self.agent_execute( {
+            "command": "KnTaskDelete",
+            "arguments": {
+                "task-uuid": task_uuid
+            }
+        }, True )
+
+        return resp[ 'success' ]
+
     def object_execute(
         self,
-        object        : bytes,
+        object        : any,
         entry         : str   = "go",
         parameters    : any   = None,
         is_module     : bool  = False,
         base_address  : int   = 0,
-        wait_to_finish: bool  = False
+        wait_to_finish: bool  = False,
+        task_uuid     : int   = 0,
     ) -> dict:
         """
         execute an object file in memory
 
         :param object:
             object file bytes to load and execute in memory
+            or object file handle that already has been loaded
+            into memory
 
         :param entry:
              entry point function name to execute after
@@ -517,14 +709,17 @@ class HcKaine( pyhavoc.agent.HcAgent ):
         :param wait_to_finish:
             wait til the execution of the bof finished
 
+        :param task_uuid
+            tasking id to use for the execution of the object file
+
         :return:
             status of executing the object file
-
         """
 
         wait: bool  = wait_to_finish
         resp: dict  = {}
         args: bytes = b''
+        obj : any   = None
 
         ##
         ## we have to wait til we receive back the
@@ -532,6 +727,16 @@ class HcKaine( pyhavoc.agent.HcAgent ):
         ##
         if is_module:
            wait = True
+
+        if type( object ) == bytes:
+            obj = base64.b64encode( object ).decode( 'utf-8' )
+        elif type( object ) == int:
+            obj = object
+        else:
+            return {
+                "status": -1,
+                "return": "object is not a byte array or handle"
+            }
 
         if type( parameters ) == list:
             args = b''
@@ -544,11 +749,12 @@ class HcKaine( pyhavoc.agent.HcAgent ):
         resp = self.agent_execute( {
                 "command":   "IoObjectExecute",
                 "arguments": {
-                    "object" : base64.b64encode( object ).decode( 'utf-8' ),
-                    "entry"  : entry,
-                    "args"   : base64.b64encode( args ).decode( 'utf-8' ),
-                    "module" : is_module,
-                    "address": base_address
+                    "object"   : obj,
+                    "entry"    : entry,
+                    "args"     : base64.b64encode( args ).decode( 'utf-8' ),
+                    "module"   : is_module,
+                    "address"  : base_address,
+                    "task-uuid": task_uuid
                 }
             },
             wait

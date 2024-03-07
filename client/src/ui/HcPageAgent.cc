@@ -329,6 +329,80 @@ auto HcPageAgent::tabCloseRequested(
     }
 }
 
+auto HcPageAgent::AgentConsole(
+    const std::string& uuid,
+    const std::string& format,
+    const std::string& output
+) -> void {
+    auto agent = Agent( uuid );
+    auto text  = std::string();
+    auto end   = format.end();
+
+    if ( agent.has_value() ) {
+        //
+        // compile format into a string
+        // TODO: move this into own function
+        //
+        for ( auto it = format.begin(); it != end; ++it ) {
+            if ( *it == '%' ) {
+                auto prev = *it;
+                auto spec = ++it;
+                switch ( * spec ) {
+                    case 'T': {
+                        text += "Time";
+                        break;
+                    }
+
+                    case 'D': {
+                        text += "Date";
+                        break;
+                    }
+
+                    case '$': {
+                        text += "DollarSign";
+                        break;
+                    }
+
+                    case 'v': {
+                        text += output;
+                        break;
+
+                    case '%':
+                        text += '%';
+                        break;
+
+                    default:
+                        text += prev;
+                        text += *spec;
+                        break;
+                    }
+                }
+            } else {
+                text += *it;
+            }
+        }
+
+        //
+        // now print the content
+        //
+        agent.value()->console->appendConsole( text.c_str() );
+    } else {
+        spdlog::debug( "[AgentConsole] agent not found: {}", uuid );
+    }
+}
+
+auto HcPageAgent::Agent(
+    const std::string &uuid
+) -> std::optional<HcAgent*> {
+    for ( auto agent : agents ) {
+        if ( agent->uuid == uuid ) {
+            return agent;
+        }
+    }
+
+    return std::nullopt;
+}
+
 HcAgentConsole::HcAgentConsole(
     HcAgent* meta,
     QWidget* parent

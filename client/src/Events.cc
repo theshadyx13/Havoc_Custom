@@ -150,12 +150,85 @@ auto HavocClient::eventDispatch(
 
         spdlog::debug( "Agent: {}", data.dump() );
 
-        spdlog::debug( "PyGILState_Check() -> {}", PyGILState_Check() );
         Gui->PagePayload->RefreshBuilders();
         Gui->PageAgent->addAgent( data );
     }
     else if ( type == Event::agent::callback )
     {
+        auto uuid = std::string();
+        auto typ  = std::string();
+        auto fmt  = json();
+        auto pat  = std::string();
+        auto out  = std::string();
+
+        if ( data.empty() ) {
+            spdlog::error( "Event::agent::callback: invalid package (data emtpy)" );
+            return;
+        }
+
+        if ( data.contains( "uuid" ) ) {
+            if ( data[ "uuid" ].is_string() ) {
+                uuid = data[ "uuid" ].get<std::string>();
+            } else {
+                spdlog::error( "invalid agent callback: \"uuid\" is not string" );
+                return;
+            }
+        } else {
+            spdlog::error( "invalid agent callback: \"uuid\" is not found" );
+            return;
+        }
+
+        if ( data.contains( "type" ) ) {
+            if ( data[ "type" ].is_string() ) {
+                typ = data[ "type" ].get<std::string>();
+            } else {
+                spdlog::error( "invalid agent callback: \"type\" is not string" );
+                return;
+            }
+        } else {
+            spdlog::error( "invalid agent callback: \"type\" is not found" );
+            return;
+        }
+
+        if ( typ == "console" ) {
+            if ( data.contains( "data" ) ) {
+                if ( data[ "data" ].is_object() ) {
+                    fmt = data[ "data" ].get<json>();
+                } else {
+                    spdlog::error( "invalid agent callback: \"data\" is not an object" );
+                    return;
+                }
+            } else {
+                spdlog::error( "invalid agent callback: \"data\" is not found" );
+                return;
+            }
+
+            if ( fmt.contains( "format" ) ) {
+                if ( fmt[ "format" ].is_string() ) {
+                    pat = fmt[ "format" ].get<std::string>();
+                } else {
+                    spdlog::error( "invalid agent callback: \"format\" is not string" );
+                    return;
+                }
+            } else {
+                spdlog::error( "invalid agent callback: \"format\" is not found" );
+                return;
+            }
+
+            if ( fmt.contains( "output" ) ) {
+                if ( fmt[ "output" ].is_string() ) {
+                    out = fmt[ "output" ].get<std::string>();
+                } else {
+                    spdlog::error( "invalid agent callback: \"output\" is not string" );
+                    return;
+                }
+            } else {
+                spdlog::error( "invalid agent callback: \"output\" is not found" );
+                return;
+            }
+
+            Gui->PageAgent->AgentConsole( uuid, pat, out );
+        }
 
     }
     else if ( type == Event::agent::console )
@@ -168,7 +241,6 @@ auto HavocClient::eventDispatch(
     }
     else if ( type == Event::agent::task )
     {
-
 
     }
     else if ( type == Event::agent::status )

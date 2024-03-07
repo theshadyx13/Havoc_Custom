@@ -64,8 +64,6 @@ auto HcAgentExecute(
     auto future  = QFuture<json>();
     auto request = json();
 
-    spdlog::debug( "[HcAgentExecute] PyGILState_Check -> {}", PyGILState_Check() );
-
     //
     // build request that is going to be
     // sent to the server implant handler

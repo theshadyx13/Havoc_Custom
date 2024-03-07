@@ -88,6 +88,16 @@ public:
     auto tabCloseRequested(
         int index
     ) const -> void;
+
+    auto Agent(
+        const std::string& uuid
+    ) -> std::optional<HcAgent*>;
+
+    auto AgentConsole(
+        const std::string& uuid,
+        const std::string& format,
+        const std::string& output
+    ) -> void;
 };
 
 QT_END_NAMESPACE
