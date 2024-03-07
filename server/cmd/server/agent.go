@@ -92,3 +92,17 @@ func (t *Teamserver) AgentBuildLog(context map[string]any, format string, args .
 		return
 	}
 }
+
+func (t *Teamserver) AgentCallback(uuid string, _type string, data map[string]any) {
+	var save = false
+
+	if _type == "console" {
+		save = true
+	}
+
+	t.UserBroadcast(save, t.EventCreate(EventAgentCallback, map[string]any{
+		"uuid": uuid,
+		"type": _type,
+		"data": data,
+	}))
+}
