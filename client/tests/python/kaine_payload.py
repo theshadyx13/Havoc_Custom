@@ -11,6 +11,8 @@ import argparse
 
 from os.path import exists
 
+KAINE_COMMANDS: list = []
+
 @pyhavoc.ui.HcUiBuilderRegisterView( "Kaine" )
 class HcKaineBuilder( pyhavoc.ui.HcPayloadView ):
 
@@ -422,73 +424,15 @@ class MyFormatter(argparse.HelpFormatter):
             # add the item to the list
             self._add_item(self._format_action, [action])
 
-class HcTableDict( dict ):
 
-    def __init__( self, kaine_agent ):
-        super(HcTableDict, self).__init__()
-
-        self.kaine = kaine_agent
-
-
-    def __setitem__(self, key, item):
-        self.__dict__[key] = item
-
-    def __getitem__(self, key):
-        return self.__dict__[key]
-
-    def __repr__(self):
-        return repr(self.__dict__)
-
-    def __len__(self):
-        return len(self.__dict__)
-
-    def __delitem__(self, key):
-        del self.__dict__[key]
-
-    def clear(self):
-        return self.__dict__.clear()
-
-    def copy(self):
-        return self.__dict__.copy()
-
-    def has_key(self, k):
-        return k in self.__dict__
-
-    def update(self, *args, **kwargs):
-        return self.__dict__.update(*args, **kwargs)
-
-    def keys(self):
-        return self.__dict__.keys()
-
-    def values(self):
-        return self.__dict__.values()
-
-    def items(self):
-        return self.__dict__.items()
-
-    def pop(self, *args):
-        return self.__dict__.pop(*args)
-
-    def __cmp__(self, dict_):
-        return self.__cmp__(self.__dict__, dict_)
-
-    def __contains__(self, item):
-        return item in self.__dict__
-
-    def __iter__(self):
-        return iter(self.__dict__)
-
-    def __unicode__(self):
-        return unicode(repr(self.__dict__))
-
+class HcKaineCommand:
+    pass
 
 @pyhavoc.agent.HcAgentRegisterInterface( "Kaine" )
 class HcKaine( pyhavoc.agent.HcAgent ):
 
     def __init__( self, *args, **kwargs ):
         super().__init__( *args, **kwargs )
-
-
         return
 
     def arg_setup_commands( self ) -> argparse.ArgumentParser:
@@ -501,8 +445,8 @@ class HcKaine( pyhavoc.agent.HcAgent ):
 
         main_commands = parser.add_subparsers( title=argparse.SUPPRESS, metavar="" )
         main_commands.add_parser( 'help', help='show available help and usage of commands' )
-        main_commands.add_parser( 'object-execute', help='execute an object file in memory' )
-        main_commands.add_parser( 'checkin', help='force a checkin request' )
+        # main_commands.add_parser( 'object-execute', help='execute an object file in memory' )
+        # main_commands.add_parser( 'checkin', help='force a checkin request' )
 
         return parser
 
@@ -536,100 +480,34 @@ class HcKaine( pyhavoc.agent.HcAgent ):
         ##
         ## setup available commands
         ##
-        parser   = self.arg_setup_commands()
-        commands = input.split()
+        parser         = self.arg_setup_commands()
+        commands       = input.split()
+        kaine_commands = []
 
-        try:
-            parser.parse_known_args( commands )
-        except argparse.ArgumentError:
+        for KnTaskObject in KAINE_COMMANDS:
+            kaine_commands.append( KnTaskObject( self ) )
+
+        if commands[ 0 ].lower() == "help":
             self.console_print( "[Kaine] >>> " + input )
-            self.console_print( f"[ERROR] invalid command: {input}" )
-            return
+            self.console_print( "" )
+            self.console_print( " Kaine Commands" )
+            self.console_print( " ==============" )
+            self.console_print( "" )
 
+            for i in kaine_commands:
+                self.console_print( f"  {i.command}\t\t{i.description}" )
 
-        match commands[ 0 ]:
-            case "help":
-                self.console_print( "[Kaine] >>> " + input )
-                self.console_print( parser.format_help() )
+            self.console_print( "" )
+        else:
+            found = False
 
-            case "object-execute":
-                task_uuid = 0
-                task_hex  = ''
-                handle    = None
-                object    = b''
-                file_path = ' '.join(commands[1:])
-                ctx       = dict()
+            for i in kaine_commands:
+                if commands[ 0 ] == i.command:
+                    self.console_input( input )
+                    i.execute( commands[ 1: ] )
+                    found = True
 
-                self.console_input( input )
-
-                ##
-                ## check if object file exists
-                ##
-                if exists( file_path ) is False:
-                    self.console_log( f"object file not found: {file_path}" )
-                    return
-
-                ##
-                ## read object file from disk
-                ##
-                handle = open( file_path, 'rb' )
-                object = handle.read()
-                handle.close()
-                handle = 0
-
-                ##
-                ## generate task uuid to track
-                ##
-                task_uuid = self.task_generate( True )
-                task_hex  = format(task_uuid, 'x')
-
-                ##
-                ## inform the operator that we generated
-                ## a task to execute the object file
-                ##
-                self.console_log( f"({ task_hex }) tasked agent to execute object file: { file_path }" )
-
-                ##
-                ## invoke object file
-                ##
-                ctx = self.object_execute( object, wait_to_finish=True, task_uuid=task_uuid, is_module=True )
-
-                ##
-                ## check if status is STATUS_SUCCESS
-                ##
-                if ctx[ 'status' ] == 0:
-                    self.console_log( f"({ task_hex }) successful executed object file" )
-
-                    ##
-                    ## check if we received a handle back
-                    ##
-                    if 'handle' in ctx:
-                        handle = ctx[ 'handle' ]
-                        self.console_log( f"object has been cached in memory [handle: { hex( handle ) }]" )
-                else:
-                    self.console_log( f"({ task_hex }) failed to execute object file [status: { ctx[ 'status' ] }] [error: { ctx[ 'return' ] }]" )
-
-                ##
-                ## execute the same entrypoint with the already loaded bof
-                ##
-                if handle != 0:
-                    self.console_log( f"executing the already loaded bof [handle: { hex( handle ) }]" )
-                    ctx = self.object_execute( handle, wait_to_finish=True, task_uuid=task_uuid )
-
-                    ##
-                    ## check if status is STATUS_SUCCESS
-                    ##
-                    if ctx[ 'status' ] == 0:
-                        self.console_log( f"({ task_hex }) successful executed object file" )
-                    else:
-                        self.console_log( f"({ task_hex }) failed to execute object file [status: { ctx[ 'status' ] }] [error: { ctx[ 'return' ] }]" )
-                ##
-                ## finished executing and
-                ## close tasking channel
-                ##
-                self.task_delete( task_uuid )
-
-            case _:
+            if found is False:
                 self.console_print( f"[ERROR] invalid command: {input}" )
 
         return
@@ -666,6 +544,21 @@ class HcKaine( pyhavoc.agent.HcAgent ):
         }, True )
 
         return resp[ 'success' ]
+
+    def object_free(
+        self,
+        handle         : int,
+        wait_to_finish : bool = False,
+        task_uuid      : int  = 0,
+    ) -> dict:
+        return self.agent_execute( {
+            "command":   "IoObjectControl",
+            "arguments": {
+                "object"   : handle,
+                "free"     : True,
+                "task-uuid": task_uuid
+            }
+        }, wait_to_finish )
 
     def object_execute(
         self,
@@ -747,7 +640,7 @@ class HcKaine( pyhavoc.agent.HcAgent ):
         ## task the agent to invoke an object file
         ##
         resp = self.agent_execute( {
-                "command":   "IoObjectExecute",
+                "command":   "IoObjectControl",
                 "arguments": {
                     "object"   : obj,
                     "entry"    : entry,
@@ -769,3 +662,100 @@ class HcKaine( pyhavoc.agent.HcAgent ):
 
         return resp
 
+@pyhavoc.agent.HcAgentExport
+class HcKaineCommand:
+
+    def __init__( self, agent: HcKaine ):
+        self.__agent = agent
+        return
+
+    def agent( self ) -> HcKaine:
+        return self.__agent
+
+    def description( self ) -> str:
+        pass
+
+    def help( self ):
+        pass
+
+    def sanity_check( self, args: list[str] ) -> bool:
+        """
+        sanity check given arguments
+
+        :param args:
+            commands to sanity check
+
+        :return:
+             if given arguments are valid and passed sanity check
+             the function is going to return True, otherwise is it
+             going to return False as it failed the sanity check.
+        """
+
+        return True
+
+    def execute( self, commands: str ):
+        pass
+
+@pyhavoc.agent.HcAgentExport
+def HcKaineRegister( interface ):
+
+    KAINE_COMMANDS.append( interface )
+
+    return
+
+class HcTableDict( dict ):
+
+    def __init__( self, kaine_agent ):
+        super( HcTableDict, self ).__init__()
+        self.kaine = kaine_agent
+
+    def __setitem__(self, key, item):
+        self.__dict__[key] = item
+
+    def __getitem__(self, key):
+        return self.__dict__[key]
+
+    def __repr__(self):
+        return repr(self.__dict__)
+
+    def __len__(self):
+        return len(self.__dict__)
+
+    def __delitem__(self, key):
+        del self.__dict__[key]
+
+    def clear(self):
+        return self.__dict__.clear()
+
+    def copy(self):
+        return self.__dict__.copy()
+
+    def has_key(self, k):
+        return k in self.__dict__
+
+    def update(self, *args, **kwargs):
+        return self.__dict__.update(*args, **kwargs)
+
+    def keys(self):
+        return self.__dict__.keys()
+
+    def values(self):
+        return self.__dict__.values()
+
+    def items(self):
+        return self.__dict__.items()
+
+    def pop(self, *args):
+        return self.__dict__.pop(*args)
+
+    def __cmp__(self, dict_):
+        return self.__cmp__(self.__dict__, dict_)
+
+    def __contains__(self, item):
+        return item in self.__dict__
+
+    def __iter__(self):
+        return iter(self.__dict__)
+
+    def __unicode__(self):
+        return unicode(repr(self.__dict__))

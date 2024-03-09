@@ -6,8 +6,16 @@ def HcAgentRegisterInterface( type: str ):
 
     def _register( interface ):
         agent.HcAgentRegisterInterface( type, interface )
+        globals()[ interface.__name__ ] = interface
+        print( f"{type} : [{ interface.__name__}] {globals()[ interface.__name__ ]}" )
 
     return _register
+
+def HcAgentExport( interface ):
+
+    globals()[ interface.__name__ ] = interface
+
+    return
 
 def HcAgentExecute(
     uuid: str,
@@ -17,7 +25,7 @@ def HcAgentExecute(
     return agent.HcAgentExecute( uuid, data, wait )
 
 class HcAgent:
-    def __init__( self, uuid: str, type: str, meta: dict ):
+    def __init__( self, uuid: str = "", type: str = "", meta: dict = {} ):
         self.uuid = uuid
         self.type = type
         self.meta = meta
