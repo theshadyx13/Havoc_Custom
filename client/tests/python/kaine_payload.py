@@ -678,21 +678,6 @@ class HcKaineCommand:
     def help( self ):
         pass
 
-    def sanity_check( self, args: list[str] ) -> bool:
-        """
-        sanity check given arguments
-
-        :param args:
-            commands to sanity check
-
-        :return:
-             if given arguments are valid and passed sanity check
-             the function is going to return True, otherwise is it
-             going to return False as it failed the sanity check.
-        """
-
-        return True
-
     def execute( self, commands: str ):
         pass
 
