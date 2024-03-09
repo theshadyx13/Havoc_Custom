@@ -130,7 +130,6 @@ PYBIND11_EMBEDDED_MODULE( _pyhavoc, m ) {
             "havoc client agent api"
         );
 
-        agent.add_object( "static_test_export", py11::object() );
         agent.def( "HcAgentRegisterInterface", HcAgentRegisterInterface );
         agent.def( "HcAgentConsoleWrite",      HcAgentConsoleWrite, py::call_guard<py::gil_scoped_release>() );
         agent.def( "HcAgentConsoleInput",      []( const py11::object& eval ) { Havoc->Python.Engine->PyEval = eval; } );
