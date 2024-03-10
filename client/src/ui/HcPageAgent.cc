@@ -205,7 +205,13 @@ auto HcPageAgent::addAgent(
     //
     // connect signals and slots
     //
-    QObject::connect( & agent->emitter, & HcAgentEmit::ConsoleWrite, agent->console, & HcAgentConsole::appendConsole );
+    QObject::connect( & agent->emitter, & HcAgentEmit::ConsoleWrite, this, []( const QString& uuid, const QString& text ) {
+        auto agent = Havoc->Agent( uuid.toStdString() );
+
+        if ( agent.has_value() ) {
+            agent.value()->console->appendConsole( HcConsole::formatString( text.toStdString() ).c_str() );
+        }
+    } );
 
     //
     // if an interface has been registered then assign it to the agent
@@ -335,57 +341,12 @@ auto HcPageAgent::AgentConsole(
     const std::string& output
 ) -> void {
     auto agent = Agent( uuid );
-    auto text  = std::string();
-    auto end   = format.end();
 
     if ( agent.has_value() ) {
         //
-        // compile format into a string
-        // TODO: move this into own function
-        //
-        for ( auto it = format.begin(); it != end; ++it ) {
-            if ( *it == '%' ) {
-                auto prev = *it;
-                auto spec = ++it;
-                switch ( * spec ) {
-                    case 'T': {
-                        text += "Time";
-                        break;
-                    }
-
-                    case 'D': {
-                        text += "Date";
-                        break;
-                    }
-
-                    case '$': {
-                        text += "DollarSign";
-                        break;
-                    }
-
-                    case 'v': {
-                        text += output;
-                        break;
-
-                    case '%':
-                        text += '%';
-                        break;
-
-                    default:
-                        text += prev;
-                        text += *spec;
-                        break;
-                    }
-                }
-            } else {
-                text += *it;
-            }
-        }
-
-        //
         // now print the content
         //
-        agent.value()->console->appendConsole( text.c_str() );
+        agent.value()->console->appendConsole( HcConsole::formatString( format, output ).c_str() );
     } else {
         spdlog::debug( "[AgentConsole] agent not found: {}", uuid );
     }
@@ -428,10 +389,10 @@ auto HcAgentConsole::inputEnter(
             try {
                 agent->interface.value().attr( "_input_dispatch" )( input );
             } catch ( py11::error_already_set &eas ) {
-                emit agent->emitter.ConsoleWrite( eas.what() );
+                emit agent->emitter.ConsoleWrite( agent->uuid.c_str(), eas.what() );
             }
         } else {
-            emit agent->emitter.ConsoleWrite( "[!] No agent script handler registered for this type" );
+            emit agent->emitter.ConsoleWrite( agent->uuid.c_str(), "[!] No agent script handler registered for this type" );
         }
 
         // HcPythonReleaseGil();

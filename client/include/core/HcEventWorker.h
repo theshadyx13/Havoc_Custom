@@ -1,5 +1,5 @@
-#ifndef HAVOCCLIENT_EVENTWORKER_H
-#define HAVOCCLIENT_EVENTWORKER_H
+#ifndef HAVOCCLIENT_HCEVENTWORKER_H
+#define HAVOCCLIENT_HCEVENTWORKER_H
 
 #include <Common.h>
 
@@ -7,15 +7,15 @@
 #include <QString>
 #include <QWebSocket>
 
-class EventWorker : public QThread
+class HcEventWorker : public QThread
 {
 Q_OBJECT
     QWebSocket* WebSocket = nullptr;
     bool        shutdown  = false;
 
 public:
-    explicit EventWorker();
-    ~EventWorker();
+    explicit HcEventWorker();
+    ~HcEventWorker();
 
     /* run event thread */
     void run();
@@ -33,4 +33,4 @@ signals:
     auto socketClosed() -> void;
 };
 
-#endif //HAVOCCLIENT_EVENTWORKER_H
+#endif //HAVOCCLIENT_HCEVENTWORKER_H

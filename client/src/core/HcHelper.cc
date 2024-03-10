@@ -1,5 +1,5 @@
 #include <Havoc.h>
-#include <core/Helper.h>
+#include <core/HcHelper.h>
 
 auto Helper::MessageBox(
     QMessageBox::Icon icon,

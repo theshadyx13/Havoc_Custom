@@ -1,10 +1,10 @@
 #include <Havoc.h>
-#include <core/EventWorker.h>
+#include <core/HcEventWorker.h>
 
-EventWorker::EventWorker()  = default;
-EventWorker::~EventWorker() = default;
+HcEventWorker::HcEventWorker()  = default;
+HcEventWorker::~HcEventWorker() = default;
 
-void EventWorker::run() {
+void HcEventWorker::run() {
     WebSocket    = new QWebSocket;
     auto Host    = QString( Havoc->Server().c_str() );
     auto SslConf = WebSocket->sslConfiguration();
@@ -14,14 +14,14 @@ void EventWorker::run() {
     WebSocket->setSslConfiguration( SslConf );
     WebSocket->ignoreSslErrors();
 
-    QObject::connect( WebSocket, &QWebSocket::connected,             this, &EventWorker::connected );
-    QObject::connect( WebSocket, &QWebSocket::disconnected,          this, &EventWorker::closed );
-    QObject::connect( WebSocket, &QWebSocket::binaryMessageReceived, this, &EventWorker::receivedEvent );
+    QObject::connect( WebSocket, &QWebSocket::connected,             this, &HcEventWorker::connected );
+    QObject::connect( WebSocket, &QWebSocket::disconnected,          this, &HcEventWorker::closed );
+    QObject::connect( WebSocket, &QWebSocket::binaryMessageReceived, this, &HcEventWorker::receivedEvent );
 
     WebSocket->open( "wss://" + Host + "/api/event" );
 }
 
-auto EventWorker::connected() -> void {
+auto HcEventWorker::connected() -> void {
     /* show event progress dialog or something */
     auto login = json {
         { "token", Havoc->Token() }
@@ -30,12 +30,12 @@ auto EventWorker::connected() -> void {
     WebSocket->sendBinaryMessage( login.dump().c_str() );
 }
 
-auto EventWorker::closed() -> void {
+auto HcEventWorker::closed() -> void {
     /* this is it. clean everything up and close the Nocturn client */
     emit socketClosed( );
 }
 
-auto EventWorker::receivedEvent(
+auto HcEventWorker::receivedEvent(
     const QByteArray &message
 ) -> void {
     /* send json event */

@@ -87,3 +87,103 @@ auto HcConsole::inputEnter() -> void {
         appendConsole( expt.c_str() );
     }
 }
+
+auto HcConsole::formatString(
+    const std::string& format,
+    const std::string& output
+) -> std::string {
+    auto text = std::string();
+    auto end  = format.end();
+
+    for ( auto it = format.begin(); it != end; ++it ) {
+        if ( *it == '%' ) {
+            char color = 0;
+            auto prev  = *it;
+            auto spec  = ++it;
+            switch ( * spec ) {
+
+                //
+                // upper case characters are certain data inserted
+                //
+
+                case 'T': {
+                    text += QTime::currentTime().toString( "hh:mm:ss" ).toStdString();
+                    break;
+                }
+
+                case 'D': {
+                    text += QDateTime::currentDateTime().toString( "dd-MMM-yy" ).toStdString();
+                    break;
+                }
+
+                case '$': {
+                    text += HcTheme::getHtmlEnd().toStdString();
+                    break;
+                }
+
+                case 'V': {
+                    text += output;
+                    break;
+
+                case '%':
+                    text += '%';
+                    break;
+
+
+                //
+                // lower case characters are colours
+                //
+
+                case 'b': // background
+                    text += HcTheme::getHtmlColorStart( Havoc->Theme.getBackground() ).toStdString();
+                    break;
+
+                case 'f': // foreground
+                    text += HcTheme::getHtmlColorStart( Havoc->Theme.getForeground() ).toStdString();
+                    break;
+
+                case 'x': // comment
+                    text += HcTheme::getHtmlColorStart( Havoc->Theme.getComment() ).toStdString();
+                    break;
+
+                case 'c': // cyan
+                    text += HcTheme::getHtmlColorStart( Havoc->Theme.getCyan() ).toStdString();
+                    break;
+
+                case 'g': // green
+                    text += HcTheme::getHtmlColorStart( Havoc->Theme.getGreen() ).toStdString();
+                    break;
+
+                case 'o': // orange
+                    text += HcTheme::getHtmlColorStart( Havoc->Theme.getOrange() ).toStdString();
+                    break;
+
+                case 'p': // pink
+                    text += HcTheme::getHtmlColorStart( Havoc->Theme.getPink() ).toStdString();
+                    break;
+
+                case 'l': // purple
+                    text += HcTheme::getHtmlColorStart( Havoc->Theme.getPurple() ).toStdString();
+                    break;
+
+                case 'r': // red
+                    text += HcTheme::getHtmlColorStart( Havoc->Theme.getRed() ).toStdString();
+                    break;
+
+                case 'y': // yellow
+                    text += HcTheme::getHtmlColorStart( Havoc->Theme.getYellow() ).toStdString();
+                    break;
+
+                default:
+                    text += prev;
+                    text += *spec;
+                    break;
+                }
+            }
+        } else {
+            text += *it;
+        }
+    }
+
+    return text;
+}

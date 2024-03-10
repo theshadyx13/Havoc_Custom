@@ -1,5 +1,5 @@
 #include <Havoc.h>
-#include <core/Helper.h>
+#include <core/HcHelper.h>
 #include <api/Engine.h>
 #include <filesystem>
 

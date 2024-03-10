@@ -12,6 +12,7 @@ class HcAgentEmit : public QWidget {
 
 signals:
     auto ConsoleWrite(
+        const QString& uuid,
         const QString& text
     ) -> void;
 };

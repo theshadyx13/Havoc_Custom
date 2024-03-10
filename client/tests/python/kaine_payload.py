@@ -488,14 +488,27 @@ class HcKaine( pyhavoc.agent.HcAgent ):
             kaine_commands.append( KnTaskObject( self ) )
 
         if commands[ 0 ].lower() == "help":
-            self.console_print( "[Kaine] >>> " + input )
+            largest_name_length = 0
+
+            self.console_print( "" )
+            self.console_print( "%x[%D %T]%$ %pKaine%$ %c>>>%$ " + input )
             self.console_print( "" )
             self.console_print( " Kaine Commands" )
             self.console_print( " ==============" )
             self.console_print( "" )
 
+            ##
+            ## find the largest command name
+            ##
             for i in kaine_commands:
-                self.console_print( f"  {i.command}\t\t{i.description}" )
+                if len(i.command) >= largest_name_length:
+                    largest_name_length = len(i.command)
+
+            self.console_print( f"   Command{' ' * (largest_name_length - 7)}   Description" )
+            self.console_print( f"   -------{' ' * (largest_name_length - 7)}   -----------" )
+
+            for i in kaine_commands:
+                self.console_print( f"   {i.command + ' ' * (largest_name_length - len(i.command))}   {i.description}" )
 
             self.console_print( "" )
         else:
@@ -667,13 +680,13 @@ class HcKaineCommand:
 
     def __init__( self, agent: HcKaine ):
         self.__agent = agent
+        self.command = ""
+        self.description = ""
+        self.is_module = False
         return
 
     def agent( self ) -> HcKaine:
         return self.__agent
-
-    def description( self ) -> str:
-        pass
 
     def help( self ):
         pass

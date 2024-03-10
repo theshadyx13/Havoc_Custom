@@ -44,8 +44,8 @@ set( HAVOC_INCLUDE
         include/Havoc.h
         include/Events.h
 
-        include/core/Helper.h
-        include/core/EventWorker.h
+        include/core/HcHelper.h
+        include/core/HcEventWorker.h
         include/core/HcAgent.h
 
         include/api/Engine.h
@@ -66,6 +66,7 @@ set( HAVOC_INCLUDE
         include/ui/HcConsole.h
         include/ui/HcLineEdit.h
         include/ui/HcComboBox.h
+        include/ui/HcTheme.h
 )
 
 ##
@@ -76,8 +77,8 @@ set( HAVOC_SRC
         src/Havoc.cc
         src/Events.cc
 
-        src/core/Helper.cc
-        src/core/EventWorker.cc
+        src/core/HcHelper.cc
+        src/core/HcEventWorker.cc
         src/core/HcAgent.cc
 
         src/ui/HcConnectDialog.cc
@@ -93,8 +94,9 @@ set( HAVOC_SRC
         src/ui/HcConsole.cc
         src/ui/HcLineEdit.cc
         src/ui/HcComboBox.cc
+        src/ui/HcTheme.cc
 
-        src/api/Engine.cc
+        src/api/HcEngine.cc
         src/api/HcCore.cc
         src/api/HcScriptManager.cc
         src/api/HcAgent.cc

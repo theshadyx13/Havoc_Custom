@@ -1,4 +1,18 @@
 
+HcTheme {
+    qproperty-Background: #282A36;
+    qproperty-CurrentLine: #44475A;
+    qproperty-Foreground: #F8F8F2;
+    qproperty-Comment: #6272A4;
+    qproperty-Cyan: #8BE9FD;
+    qproperty-Green: #50FA7B;
+    qproperty-Orange: #FFB86C;
+    qproperty-Pink: #FF79C6;
+    qproperty-Purple: #BD93F9;
+    qproperty-Red: #FF5555;
+    qproperty-Yellow: #F1FA8C;
+}
+
 QMainWindow {
     background-color: #282a36;
     color: #f8f8f2;

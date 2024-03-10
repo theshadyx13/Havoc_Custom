@@ -5,8 +5,8 @@
 #include <Events.h>
 
 /* Havoc include */
-#include <core/Helper.h>
-#include <core/EventWorker.h>
+#include <core/HcHelper.h>
+#include <core/HcEventWorker.h>
 
 #include <ui/HcPageAgent.h>
 #include <ui/HcPageListener.h>
@@ -17,6 +17,7 @@
 #include <ui/HcMainWindow.h>
 #include <ui/HcConnectDialog.h>
 #include <ui/HcLineEdit.h>
+#include <ui/HcTheme.h>
 
 #include <api/Engine.h>
 
@@ -44,7 +45,7 @@ class HavocClient : public QWidget {
 
     struct {
         QThread*     Thread;
-        EventWorker* Worker;
+        HcEventWorker* Worker;
     } Events;
 
     std::vector<json>         listeners  = {};
@@ -54,6 +55,7 @@ class HavocClient : public QWidget {
 
 public:
     HcMainWindow* Gui = nullptr;
+    HcTheme       Theme;
 
     struct {
         QThread*    Thread;

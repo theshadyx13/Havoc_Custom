@@ -44,6 +44,11 @@ public:
         const QString& text
     ) -> void;
 
+    static auto formatString(
+        const std::string& format,
+        const std::string& output = ""
+    ) -> std::string;
+
     virtual auto inputEnter() -> void;
 };
 

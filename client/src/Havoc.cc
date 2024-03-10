@@ -187,6 +187,7 @@ auto HavocClient::Main(
     Gui = new HcMainWindow;
     Gui->renderWindow();
     Gui->setStyleSheet( getStyleSheet() );
+    Theme.setStyleSheet( getStyleSheet() );
 
     //
     // setup Python thread
@@ -205,8 +206,10 @@ auto HavocClient::Main(
     //
     Gui->PageScripts->LoadScript( "tests/python/kaine_payload.py" );
     Gui->PageScripts->LoadScript( "tests/python/listener_http.py" );
-
     Gui->PageScripts->LoadScript( "tests/python/kaine_commands.py" );
+
+    spdlog::debug( "Theme.getBackground() -> {}", Theme.getBackground().value() );
+    spdlog::debug( "Theme.getForeground() -> {}", Theme.getForeground().value() );
 
     //
     // set up the event thread and connect to the
@@ -342,12 +345,12 @@ auto HavocClient::setupThreads() -> void {
     // now set up the event thread and dispatcher
     //
     Events.Thread = new QThread;
-    Events.Worker = new EventWorker;
+    Events.Worker = new HcEventWorker;
     Events.Worker->moveToThread( Events.Thread );
 
-    QObject::connect( Events.Thread, &QThread::started, Events.Worker, &EventWorker::run );
-    QObject::connect( Events.Worker, &EventWorker::availableEvent, this, &HavocClient::eventHandle );
-    QObject::connect( Events.Worker, &EventWorker::socketClosed, this, &HavocClient::eventClosed );
+    QObject::connect( Events.Thread, &QThread::started, Events.Worker, &HcEventWorker::run );
+    QObject::connect(Events.Worker, &HcEventWorker::availableEvent, this, &HavocClient::eventHandle );
+    QObject::connect(Events.Worker, &HcEventWorker::socketClosed, this, &HavocClient::eventClosed );
 
     //
     // fire up the even thread that is going to

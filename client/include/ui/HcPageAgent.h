@@ -96,7 +96,7 @@ public:
     auto AgentConsole(
         const std::string& uuid,
         const std::string& format,
-        const std::string& output
+        const std::string& output = ""
     ) -> void;
 };
 

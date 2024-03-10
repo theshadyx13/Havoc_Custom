@@ -35,7 +35,7 @@ auto HcAgentConsoleWrite(
     auto agent = Havoc->Agent( uuid );
 
     if ( agent.has_value() ) {
-        emit agent.value()->emitter.ConsoleWrite( content.c_str() );
+        emit agent.value()->emitter.ConsoleWrite( uuid.c_str(), content.c_str() );
     }
 }
 
@@ -60,7 +60,6 @@ auto HcAgentExecute(
     const json&        data,
     const bool         wait
 ) -> json {
-
     auto future  = QFuture<json>();
     auto request = json();
 

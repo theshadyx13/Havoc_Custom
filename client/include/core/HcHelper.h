@@ -1,5 +1,5 @@
-#ifndef HAVOCCLIENT_HELPER_H
-#define HAVOCCLIENT_HELPER_H
+#ifndef HAVOCCLIENT_HCHELPER_H
+#define HAVOCCLIENT_HCHELPER_H
 
 #include <Common.h>
 
@@ -23,4 +23,4 @@ namespace Helper {
     ) -> QIcon;
 };
 
-#endif //HAVOCCLIENT_HELPER_H
+#endif //HAVOCCLIENT_HCHELPER_H
