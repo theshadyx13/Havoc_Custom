@@ -394,37 +394,6 @@ class HcKaineBuilder( pyhavoc.ui.HcPayloadView ):
     def payload( self, payload: bytes ) -> None:
         pass
 
-##
-## https://stackoverflow.com/questions/32888815/max-help-position-is-not-works-in-python-argparse-library
-##
-class MyFormatter(argparse.HelpFormatter):
-    """
-    Corrected _max_action_length for the indenting of subactions
-    """
-    def add_argument(self, action):
-        if action.help is not argparse.SUPPRESS:
-
-            # find all invocations
-            get_invocation = self._format_action_invocation
-            invocations = [get_invocation(action)]
-            current_indent = self._current_indent
-            for subaction in self._iter_indented_subactions(action):
-                # compensate for the indent that will be added
-                indent_chg = self._current_indent - current_indent
-                added_indent = 'x'*indent_chg
-                invocations.append(added_indent+get_invocation(subaction))
-            # print('inv', invocations)
-
-            # update the maximum item length
-            invocation_length = max([len(s) for s in invocations])
-            action_length = invocation_length + self._current_indent
-            self._action_max_length = max(self._action_max_length,
-                                          action_length)
-
-            # add the item to the list
-            self._add_item(self._format_action, [action])
-
-
 class HcKaineCommand:
     pass
 
@@ -433,25 +402,6 @@ class HcKaine( pyhavoc.agent.HcAgent ):
 
     def __init__( self, *args, **kwargs ):
         super().__init__( *args, **kwargs )
-        return
-
-    def arg_setup_commands( self ) -> argparse.ArgumentParser:
-
-        formatter = lambda prog: MyFormatter(prog, max_help_position=40,width=100)
-        parser    = argparse.ArgumentParser( prog=argparse.SUPPRESS,
-                                             usage=argparse.SUPPRESS,
-                                             formatter_class=formatter,
-                                             add_help=False, exit_on_error=False )
-
-        main_commands = parser.add_subparsers( title=argparse.SUPPRESS, metavar="" )
-        main_commands.add_parser( 'help', help='show available help and usage of commands' )
-        # main_commands.add_parser( 'object-execute', help='execute an object file in memory' )
-        # main_commands.add_parser( 'checkin', help='force a checkin request' )
-
-        return parser
-
-    def arg_error( self, message ):
-        self.console_print( f"[ERROR] message: {message}" )
         return
 
     def console_log( self, text ):
@@ -480,7 +430,6 @@ class HcKaine( pyhavoc.agent.HcAgent ):
         ##
         ## setup available commands
         ##
-        parser         = self.arg_setup_commands()
         commands       = input.split()
         kaine_commands = []
 
@@ -670,8 +619,9 @@ class HcKaine( pyhavoc.agent.HcAgent ):
         ## if there is something to parse then
         ## lets parse it and return it
         ##
-        if "return" in resp:
-            resp[ "return" ] = base64.b64decode( resp[ "return" ].encode( 'utf-8' ) )
+        if wait_to_finish is True:
+            if "return" in resp:
+                resp[ "return" ] = base64.b64decode( resp[ "return" ].encode( 'utf-8' ) )
 
         return resp
 

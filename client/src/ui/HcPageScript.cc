@@ -98,6 +98,7 @@ HcPagePlugins::HcPagePlugins()
                 Filename = FileDialog.selectedUrls().value( 0 ).toLocalFile();
                 if ( ! Filename.toString().isNull() ) {
                     try {
+                        py11::gil_scoped_acquire gil;
                         LoadCallback.value()( py11::str( Filename.toString().toStdString() ) );
                     } catch ( py11::error_already_set &eas ) {
                         exception = eas.what();
@@ -106,8 +107,6 @@ HcPagePlugins::HcPagePlugins()
                     if ( ! exception.empty() ) {
                         PyConsole->appendConsole( exception.c_str() );
                     }
-
-                    py11::gil_scoped_release release;
                 }
             }
         } else {

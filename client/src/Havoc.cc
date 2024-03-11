@@ -206,10 +206,8 @@ auto HavocClient::Main(
     //
     Gui->PageScripts->LoadScript( "tests/python/kaine_payload.py" );
     Gui->PageScripts->LoadScript( "tests/python/listener_http.py" );
-    Gui->PageScripts->LoadScript( "tests/python/kaine_commands.py" );
 
-    spdlog::debug( "Theme.getBackground() -> {}", Theme.getBackground().value() );
-    spdlog::debug( "Theme.getForeground() -> {}", Theme.getForeground().value() );
+    Gui->PageScripts->LoadScript( "../../Plugins/kaine-kit/modules/modules.py" );
 
     //
     // set up the event thread and connect to the

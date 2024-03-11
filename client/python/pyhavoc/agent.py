@@ -7,7 +7,6 @@ def HcAgentRegisterInterface( type: str ):
     def _register( interface ):
         agent.HcAgentRegisterInterface( type, interface )
         globals()[ interface.__name__ ] = interface
-        print( f"{type} : [{ interface.__name__}] {globals()[ interface.__name__ ]}" )
 
     return _register
 
