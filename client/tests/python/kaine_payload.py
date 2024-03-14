@@ -404,11 +404,11 @@ class HcKaine( pyhavoc.agent.HcAgent ):
         super().__init__( *args, **kwargs )
         return
 
-    def console_log( self, text ):
+    def console_log( self, text, type="info" ):
         self.agent_execute( {
             "command": "KnConsole",
             "arguments": {
-                "type"   : "console",
+                "type"   : type,
                 "output" : text
             }
         }, True )
@@ -629,10 +629,13 @@ class HcKaine( pyhavoc.agent.HcAgent ):
 class HcKaineCommand:
 
     def __init__( self, agent: HcKaine ):
+
         self.__agent = agent
         self.command = ""
         self.description = ""
-        self.is_module = False
+        self.is_module  = False
+        self.opsec_safe = True
+
         return
 
     def agent( self ) -> HcKaine:
