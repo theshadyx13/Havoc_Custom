@@ -476,16 +476,12 @@ class HcKaine( pyhavoc.agent.HcAgent ):
 
     def task_generate(
         self,
-        channel: bool = False
     ) -> int:
         ##
         ## try to generate task uuid
         ##
         resp = self.agent_execute( {
-            "command": "KnTaskGenerate",
-            "arguments": {
-                "channel": channel
-            }
+            "command": "KnTaskGenerate"
         }, True )
 
         return resp[ 'task-uuid' ]
@@ -653,6 +649,24 @@ def HcKaineRegister( interface ):
     KAINE_COMMANDS.append( interface )
 
     return
+
+@pyhavoc.agent.HcAgentExport
+class KnObjectModule( ):
+
+    def __init__(
+        self,
+        agent,
+        object_path = None,
+        use_wide_string = False
+    ):
+        pass
+
+    def invoke( self, function, args ) -> dict:
+        pass
+
+    def free( self ):
+        pass
+
 
 class HcTableDict( dict ):
 

@@ -60,8 +60,10 @@ auto HcAgentExecute(
     const json&        data,
     const bool         wait
 ) -> json {
-    auto future  = QFuture<json>();
-    auto request = json();
+    auto future   = QFuture<json>();
+    auto request  = json();
+    auto result   = httplib::Result();
+    auto response = json();
 
     //
     // build request that is going to be
@@ -74,46 +76,27 @@ auto HcAgentExecute(
     };
 
     //
-    // fire up a concurrent worker since it is easier
-    // to handle if we want to wait or not for it.
+    // send api request
     //
-    future = QtConcurrent::run( [](const json& request) {
-        auto result   = httplib::Result();
-        auto response = json();
-
+    if ( ( result = Havoc->ApiSend( "/api/agent/execute", request, true ) ) ) {
         //
-        // send api request
+        // check for valid status response
         //
-        if ( ( result = Havoc->ApiSend( "/api/agent/execute", request, true ) ) ) {
-            //
-            // check for valid status response
-            //
-            if ( result->status != 200 ) {
-                spdlog::debug( "failed to send request: status code {}", result->status );
-                return json {
+        if ( result->status != 200 ) {
+            spdlog::debug( "failed to send request: status code {}", result->status );
+            return json {
                     { "error", "failed to send request" }
-                };
-            }
-            //
-            // check for emtpy request
-            //
-            if ( ! result->body.empty() ) {
-                if ( ( response = json::parse( result->body ) ).is_discarded() ) {
-                    response[ "error" ] = "failed to parse response";
-                }
+            };
+        }
+        //
+        // check for emtpy request
+        //
+        if ( ! result->body.empty() ) {
+            if ( ( response = json::parse( result->body ) ).is_discarded() ) {
+                response[ "error" ] = "failed to parse response";
             }
         }
-
-        return response;
-    }, request );
-
-    //
-    // wait for the
-    //
-    if ( wait ) {
-        future.waitForFinished();
-        return future.result();
     }
 
-    return {};
+    return response;
 }
