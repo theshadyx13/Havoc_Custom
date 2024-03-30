@@ -65,7 +65,6 @@ func (t *Teamserver) AgentExecute(uuid string, data map[string]any, wait bool) (
 	// load stored agent by uuid from map
 	if value, ok = t.agents.Load(uuid); ok {
 		agent = value.(Agent)
-		fmt.Println(agent)
 		return t.plugins.AgentExecute(agent._type, uuid, data, wait)
 	}
 

@@ -158,9 +158,4 @@ auto HcPyEngine::run() -> void {
     if ( ! exception.empty() ) {
         spdlog::error( "failed to import \"python.pyhavoc\": \n{}", exception );
     }
-
-    //
-    // release gil
-    //
-    py11::gil_scoped_release release;
 }

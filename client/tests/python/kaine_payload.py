@@ -10,6 +10,7 @@ import base64
 import argparse
 
 from os.path import exists
+from struct import pack, calcsize
 
 KAINE_COMMANDS: list = []
 
@@ -397,11 +398,89 @@ class HcKaineBuilder( pyhavoc.ui.HcPayloadView ):
 class HcKaineCommand:
     pass
 
+class HcTableDict( dict ):
+
+    def __init__( self, kaine_agent ):
+        super( HcTableDict, self ).__init__()
+        self.kaine = kaine_agent
+
+    def __setitem__(self, key, item):
+        print( f"HcTableDict.__setitem__( {key}, {item} ) " )
+        self.kaine.key_set( key, item )
+
+    def __getitem__(self, key):
+        print( f"HcTableDict.__getitem__( {key} ) " )
+        return self.kaine.key_get( key )
+
+    def __repr__(self):
+        print( f"HcTableDict.__repr__() " )
+
+    def __len__(self):
+        print( f"HcTableDict.__len__() " )
+
+    def __delitem__(self, key):
+        print( f"HcTableDict.__delitem__( {key} ) " )
+        self.kaine.key_delete( key )
+
+    def clear(self):
+        print( f"HcTableDict.clear() " )
+        pass
+
+    def copy(self):
+        print( f"HcTableDict.copy()" )
+        pass
+
+    def has_key(self, key):
+        print( f"HcTableDict.has_key( {key} ) " )
+        return self.kaine.key_exist( key )
+
+    def update(self, *args, **kwargs):
+        print( f"HcTableDict.update( {args}, {kwargs} ) " )
+        pass
+
+    def keys(self):
+        print( f"HcTableDict.keys() " )
+        pass
+
+    def values(self):
+        print( f"HcTableDict.keys() " )
+        pass
+
+    def items(self):
+        print( f"HcTableDict.items() " )
+        pass
+
+    def pop(self, *args):
+        pass
+
+    def __cmp__(self, dict_):
+        print( f"HcTableDict.__cmp__( {dict_} ) " )
+        pass
+
+    def __contains__(self, item):
+        return self.kaine.key_exist( item )
+
+    def __iter__(self):
+        print( f"HcTableDict.__iter__()" )
+        pass
+
+    def __unicode__(self):
+        print( f"HcTableDict.__unicode__()" )
+        pass
+
+
 @pyhavoc.agent.HcAgentRegisterInterface( "Kaine" )
 class HcKaine( pyhavoc.agent.HcAgent ):
 
     def __init__( self, *args, **kwargs ):
         super().__init__( *args, **kwargs )
+
+        self.key_store = HcTableDict( self )
+
+        return
+
+    def console_error( self, text ):
+        self.console_print( "%x[%D %T]%$ %r[-]%$ " + text )
         return
 
     def console_log( self, text, type="info" ):
@@ -415,14 +494,18 @@ class HcKaine( pyhavoc.agent.HcAgent ):
 
         return
 
-    def console_input( self, text ):
-        self.agent_execute( {
-            "command": "KnConsole",
-            "arguments": {
-                "type"   : "input",
-                "output" : text
-            }
-        }, True )
+    def console_input( self, text, local_only=False ):
+        if local_only is True:
+            self.console_print( "" )
+            self.console_print( "%x[%D %T]%$ %pKaine%$ %c>>>%$ " + text )
+        else:
+            self.agent_execute( {
+                "command": "KnConsole",
+                "arguments": {
+                    "type"   : "input",
+                    "output" : text
+                }
+            }, True )
 
         return
 
@@ -470,9 +553,43 @@ class HcKaine( pyhavoc.agent.HcAgent ):
                     found = True
 
             if found is False:
-                self.console_print( f"[ERROR] invalid command: {input}" )
+                self.console_input( input, local_only=True )
+                self.console_error( f"invalid command: {input}" )
 
         return
+
+    def key_get( self, key: str ) -> any:
+        return self.agent_execute( {
+            "command"   : "KnStoreGet",
+            "arguments" : {
+                "key": key
+            },
+        }, True )[ 'result' ]
+
+    def key_set( self, key: str, val: any ) -> any:
+        self.agent_execute( {
+            "command"   : "KnStoreSet",
+            "arguments" : {
+                "key"   : key,
+                "value" : val
+            },
+        }, True )
+
+    def key_exist( self, key: str ) -> bool:
+        return self.agent_execute( {
+            "command"   : "KnStoreExist",
+            "arguments" : {
+                "key"   : key,
+            },
+        }, True )[ 'result' ]
+
+    def key_delete( self, key: str ) -> None:
+        self.agent_execute( {
+            "command"   : "KnStoreDelete",
+            "arguments" : {
+                "key"   : key,
+            },
+        }, True )
 
     def task_generate(
         self,
@@ -567,10 +684,9 @@ class HcKaine( pyhavoc.agent.HcAgent ):
             status of executing the object file
         """
 
-        wait: bool  = wait_to_finish
-        resp: dict  = {}
-        args: bytes = b''
-        obj : any   = None
+        wait: bool = wait_to_finish
+        resp: dict = {}
+        obj : any  = None
 
         ##
         ## we have to wait til we receive back the
@@ -589,11 +705,6 @@ class HcKaine( pyhavoc.agent.HcAgent ):
                 "return": "object is not a byte array or handle"
             }
 
-        if type( parameters ) == list:
-            args = b''
-        elif type( parameters ) == bytes:
-            args = parameters
-
         ##
         ## task the agent to invoke an object file
         ##
@@ -602,7 +713,7 @@ class HcKaine( pyhavoc.agent.HcAgent ):
                 "arguments": {
                     "object"   : obj,
                     "entry"    : entry,
-                    "args"     : base64.b64encode( args ).decode( 'utf-8' ),
+                    "args"     : base64.b64encode( parameters ).decode( 'utf-8' ),
                     "module"   : is_module,
                     "address"  : base_address,
                     "task-uuid": task_uuid
@@ -650,77 +761,156 @@ def HcKaineRegister( interface ):
 
     return
 
+class KnPacker:
+    def __init__(self):
+        self.buffer : bytes = b''
+        self.size   : int   = 0
+
+    def build( self ):
+        return pack("<L", self.size) + self.buffer
+
+    def add_string(self, s):
+        if s is None:
+            s = ''
+        if isinstance(s, str):
+            s = s.encode("utf-8" )
+        fmt = "<L{}s".format(len(s) + 1)
+        self.buffer += pack(fmt, len(s)+1, s)
+        self.size   += calcsize(fmt)
+
+    def add_wide_string(self, s):
+        if s is None:
+            s = ''
+        s = s.encode("utf-16_le")
+        fmt = "<L{}s".format(len(s) + 2)
+        self.buffer += pack(fmt, len(s)+2, s)
+        self.size   += calcsize(fmt)
+
+    def add_bytes(self, b):
+        if b is None:
+            b = b''
+        fmt = "<L{}s".format(len(b))
+        self.buffer += pack(fmt, len(b), b)
+        self.size   += calcsize(fmt)
+
+    def add_u8(self, b):
+        fmt = '<c'
+        self.buffer += pack(fmt, b)
+        self.size   += 1
+
+    def add_u32(self, dint):
+        self.buffer += pack("<i", dint)
+        self.size   += 4
+
+    def add_u16(self, n):
+        fmt = '<h'
+        self.buffer += pack(fmt, n)
+        self.size   += 2
+
 @pyhavoc.agent.HcAgentExport
-class KnObjectModule( ):
+class KnObjectModule:
 
     def __init__(
         self,
-        agent,
-        object_path = None,
-        use_wide_string = False
+        agent      : HcKaine,
+        object     : any,
+        function   : str   = "",
+        *args,
+        data       : bytes = b'',
+        obfuscate  : bool  = False,
+        veh_dbg    : bool  = False
     ):
-        pass
+        self.__agent   = agent
+        self.__object  = object
+        self.__handle  = 0
+        self.__status  = ""
+        self.__error   = ""
+        self.__uuid    = 0
+        buffer         = b''
+        packer         = KnPacker()
 
-    def invoke( self, function, args ) -> dict:
-        pass
+        ##
+        ## check if the object parameter is an
+        ## byte array to be loaded by the agent
+        ##
+        if type( object ) == bytes:
+
+            if len(args) > 0:
+                for i in args:
+                    if type( i ) == int:
+                        packer.add_u32( i )
+                    elif type( i ) == str:
+                        packer.add_string( i )
+                    elif type( i ) == bytes:
+                        packer.add_bytes( i )
+
+                buffer = packer.build()
+
+            if len(data) > 0:
+                buffer = data
+
+            ##
+            ## task the kaine agent to
+            ## load the object file into memory
+            ##
+            ctx = self.__agent.object_execute( self.__object, entry=function, parameters=buffer, is_module=True, wait_to_finish=True )
+            self.__status = ctx[ 'status' ]
+            self.__uuid   = ctx[ 'task-uuid' ]
+
+            if ctx[ 'status' ] != "STATUS_SUCCESS":
+                self.__error  = ctx[ 'return' ].decode( 'utf-8' )
+            else:
+                self.__handle = ctx[ 'handle' ]
+        else:
+            self.__handle = object
+            self.__status = 'STATUS_SUCCESS'
+
+        return
+
+    def uuid( self ) -> int:
+        return self.__uuid
+
+    def handle( self ) -> int:
+        return self.__handle
+
+    def error( self ) -> str:
+        return self.__error
+
+    def status( self ) -> str:
+        return self.__status
+
+    def invoke( self, function, *args, data=b'' ) -> dict:
+        packer = KnPacker()
+        buffer: bytes    = b''
+
+        if self.status() != 'STATUS_SUCCESS':
+            return {
+                "error": self.error()
+            }
+
+        if len(args) > 0:
+
+            for i in args:
+                if type( i ) == int:
+                    packer.add_u32( i )
+                elif type( i ) == str:
+                    packer.add_string( i )
+                elif type( i ) == bytes:
+                    packer.add_bytes( i )
+
+            buffer = packer.build()
+
+        if len(data) > 0:
+            buffer = data
+        
+        ctx = self.__agent.object_execute( object=self.handle(), parameters=buffer, entry=function, wait_to_finish=True )
+
+        if 'task-uuid' in ctx:
+            self.__uuid = ctx[ 'task-uuid' ]
+
+        return ctx
 
     def free( self ):
-        pass
+        return self.__agent.object_free( self.handle(), wait_to_finish=True )
 
 
-class HcTableDict( dict ):
-
-    def __init__( self, kaine_agent ):
-        super( HcTableDict, self ).__init__()
-        self.kaine = kaine_agent
-
-    def __setitem__(self, key, item):
-        self.__dict__[key] = item
-
-    def __getitem__(self, key):
-        return self.__dict__[key]
-
-    def __repr__(self):
-        return repr(self.__dict__)
-
-    def __len__(self):
-        return len(self.__dict__)
-
-    def __delitem__(self, key):
-        del self.__dict__[key]
-
-    def clear(self):
-        return self.__dict__.clear()
-
-    def copy(self):
-        return self.__dict__.copy()
-
-    def has_key(self, k):
-        return k in self.__dict__
-
-    def update(self, *args, **kwargs):
-        return self.__dict__.update(*args, **kwargs)
-
-    def keys(self):
-        return self.__dict__.keys()
-
-    def values(self):
-        return self.__dict__.values()
-
-    def items(self):
-        return self.__dict__.items()
-
-    def pop(self, *args):
-        return self.__dict__.pop(*args)
-
-    def __cmp__(self, dict_):
-        return self.__cmp__(self.__dict__, dict_)
-
-    def __contains__(self, item):
-        return item in self.__dict__
-
-    def __iter__(self):
-        return iter(self.__dict__)
-
-    def __unicode__(self):
-        return unicode(repr(self.__dict__))

@@ -107,10 +107,10 @@ auto HcPageBuilder::AddBuilder(
     const std::string&  name,
     const py11::object& object
 ) -> void {
-
+    auto gil     = py11::gil_scoped_acquire();
     auto builder = Builder {
-        .name   = name,
-        .widget = new QWidget
+        .name    = name,
+        .widget  = new QWidget
     };
 
     builder.widget->setObjectName( "HcPageBuilder.Builder." + QString( name.c_str() ) );
@@ -127,8 +127,6 @@ auto HcPageBuilder::AddBuilder(
         );
         return;
     }
-
-    py11::gil_scoped_release release;
 
     if ( Builders.empty() ) {
         ComboPayload->clear();
@@ -187,6 +185,8 @@ auto HcPageBuilder::PressedGenerate() -> void
 
     for ( auto& builder : Builders ) {
         if ( builder.name == ComboPayload->currentText().toStdString() ) {
+            auto gil = py11::gil_scoped_acquire();
+
             found = true;
             name  = builder.name;
 
@@ -194,23 +194,18 @@ auto HcPageBuilder::PressedGenerate() -> void
                 /* sanity check input */
                 if ( py11::hasattr( builder.instance, "sanity_check" ) ) {
                     if ( ! builder.instance.attr( "sanity_check" )().cast<bool>() ) {
-                        py11::gil_scoped_release release;
                         spdlog::debug( "sanity check failed. exit and dont send request" );
                         return;
                     }
                 }
 
                 if ( ( config = builder.instance.attr( "generate" )() ).empty() ) {
-                    py11::gil_scoped_release release;
                     return;
                 }
             } catch ( py11::error_already_set &eas ) {
-                py11::gil_scoped_release release;
                 spdlog::error( "failed to refresh builder \"{}\": \n{}", builder.name, eas.what() );
                 return;
             }
-
-            py11::gil_scoped_release release;
 
             break;
         }
