@@ -62,7 +62,7 @@ func (t *Teamserver) UserLogin(token string, login any, socket *websocket.Conn) 
 	}
 
 	// store the token and client data & socket into the sync map
-	t.clients.Store(token, HavocUser{
+	t.clients.Store(token, &HavocUser{
 		socket:   socket,
 		username: user,
 	})
@@ -88,7 +88,7 @@ func (t *Teamserver) UserLogoutByToken(token string) error {
 	var (
 		value any
 		ok    bool
-		user  HavocUser
+		user  *HavocUser
 		err   error
 	)
 
@@ -96,7 +96,7 @@ func (t *Teamserver) UserLogoutByToken(token string) error {
 		return errors.New("user was not found by token")
 	}
 
-	user = value.(HavocUser)
+	user = value.(*HavocUser)
 
 	// close the socket connection in
 	// case it's not closed already
@@ -120,7 +120,7 @@ func (t *Teamserver) UserStatus(username string) int {
 	var status = UserStatusOffline
 
 	t.clients.Range(func(key, value any) bool {
-		if value.(HavocUser).username == username {
+		if value.(*HavocUser).username == username {
 			status = UserStatusOnline
 			return false
 		}
@@ -139,7 +139,7 @@ func (t *Teamserver) UserNameByToken(token string) (string, error) {
 	err = errors.New("user not found by token")
 
 	t.clients.Range(func(key, value any) bool {
-		var user = value.(HavocUser)
+		var user = value.(*HavocUser)
 		if key == token {
 			name = user.username
 			err = nil
@@ -154,7 +154,7 @@ func (t *Teamserver) UserNameByToken(token string) (string, error) {
 
 func (t *Teamserver) UserSend(username string, event map[string]any) error {
 	var (
-		user HavocUser
+		user *HavocUser
 		err  error
 		data []byte
 	)
@@ -164,7 +164,7 @@ func (t *Teamserver) UserSend(username string, event map[string]any) error {
 
 	// iterate over connected users/clients
 	t.clients.Range(func(key, value any) bool {
-		user = value.(HavocUser)
+		user = value.(*HavocUser)
 
 		// check if the connected client user
 		// is the one we are searching for
@@ -173,6 +173,9 @@ func (t *Teamserver) UserSend(username string, event map[string]any) error {
 			if data, err = json.Marshal(event); err != nil {
 				return false
 			}
+
+			user.mutex.Lock()
+			defer user.mutex.Unlock()
 
 			// write the message to the specified user
 			if err = user.socket.WriteMessage(websocket.BinaryMessage, data); err != nil {
@@ -194,7 +197,7 @@ func (t *Teamserver) UserSend(username string, event map[string]any) error {
 
 func (t *Teamserver) UserBroadcast(save bool, event map[string]any) {
 	var (
-		user HavocUser
+		user *HavocUser
 		err  error
 		data []byte
 	)
@@ -205,12 +208,15 @@ func (t *Teamserver) UserBroadcast(save bool, event map[string]any) {
 
 	// iterate over connected users/clients
 	t.clients.Range(func(key, value any) bool {
-		user = value.(HavocUser)
+		user = value.(*HavocUser)
 
 		// marshal the event map into a json byte array
 		if data, err = json.Marshal(event); err != nil {
 			return false
 		}
+
+		user.mutex.Lock()
+		defer user.mutex.Unlock()
 
 		// write the message to the user
 		if err = user.socket.WriteMessage(websocket.BinaryMessage, data); err != nil {

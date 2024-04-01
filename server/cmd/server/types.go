@@ -11,6 +11,7 @@ import (
 
 type HavocUser struct {
 	username string
+	mutex    sync.Mutex
 	socket   *websocket.Conn
 }
 

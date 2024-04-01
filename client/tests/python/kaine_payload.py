@@ -598,15 +598,48 @@ class HcKaine( pyhavoc.agent.HcAgent ):
         ## try to generate task uuid
         ##
         resp = self.agent_execute( {
-            "command": "KnTaskGenerate"
+            "command": "KnTaskGenerate",
         }, True )
 
         return resp[ 'task-uuid' ]
 
-    def task_delete(
+    def task_read(
+        self,
+        task_uuid: int
+    ) -> bytes:
+
+        ##
+        ## try to generate task uuid
+        ##
+        resp = self.agent_execute( {
+            "command": "KnTaskRead",
+            "arguments": {
+                "task-uuid": task_uuid
+            }
+        }, True )
+
+        return base64.b64decode( resp[ 'read' ] )
+
+    def task_exist(
         self,
         task_uuid: int
     ) -> bool:
+        ##
+        ## try to generate task uuid
+        ##
+        resp = self.agent_execute( {
+            "command": "KnTaskExist",
+            "arguments": {
+                "task-uuid": task_uuid
+            }
+        }, True )
+
+        return resp[ 'exist' ]
+
+    def task_delete(
+        self,
+        task_uuid: int
+    ) -> bytes:
 
         ##
         ## try to generate task uuid
@@ -825,9 +858,11 @@ class KnObjectModule:
         self.__handle  = 0
         self.__status  = ""
         self.__error   = ""
+        self.__return  = ""
         self.__uuid    = 0
-        buffer         = b''
-        packer         = KnPacker()
+
+        buffer = b''
+        packer = KnPacker()
 
         ##
         ## check if the object parameter is an
@@ -857,10 +892,12 @@ class KnObjectModule:
             self.__status = ctx[ 'status' ]
             self.__uuid   = ctx[ 'task-uuid' ]
 
-            if ctx[ 'status' ] != "STATUS_SUCCESS":
-                self.__error  = ctx[ 'return' ].decode( 'utf-8' )
-            else:
+            if ctx[ 'status' ] == "STATUS_SUCCESS":
                 self.__handle = ctx[ 'handle' ]
+                self.__return = ctx[ 'return' ].decode( 'utf-8' )
+            else:
+                self.__error = ctx[ 'return' ].decode( 'utf-8' )
+
         else:
             self.__handle = object
             self.__status = 'STATUS_SUCCESS'
@@ -875,6 +912,9 @@ class KnObjectModule:
 
     def error( self ) -> str:
         return self.__error
+
+    def data( self ) -> str:
+        return self.__return
 
     def status( self ) -> str:
         return self.__status
