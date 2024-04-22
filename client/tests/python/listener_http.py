@@ -270,13 +270,10 @@ class HcListenerHttp( pyhavoc.ui.HcListenerView ):
     ## render the widgets for the listener
     ##
     def main( self ):
-
-        widget = self.listener_widget()
-
         ##
         ## create base widget
         ##
-        self.layout = QGridLayout( widget )
+        self.layout = QGridLayout( self.listener_widget() )
         self.layout.setContentsMargins( 0, 0, 0, 0 )
 
         self.tab_widget = QTabWidget()

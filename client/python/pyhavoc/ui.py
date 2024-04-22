@@ -7,6 +7,7 @@ from _pyhavoc import ui
 ##
 ## import qt ui library
 ##
+from PySide6 import *
 from PySide6.QtCore import *
 from PySide6.QtGui import *
 from PySide6.QtWidgets import *

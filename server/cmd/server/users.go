@@ -92,7 +92,7 @@ func (t *Teamserver) UserLogoutByToken(token string) error {
 		err   error
 	)
 
-	if value, ok = t.clients.Load(token); !ok {
+	if value, ok = t.clients.LoadAndDelete(token); !ok {
 		return errors.New("user was not found by token")
 	}
 
@@ -100,9 +100,7 @@ func (t *Teamserver) UserLogoutByToken(token string) error {
 
 	// close the socket connection in
 	// case it's not closed already
-	if err = user.socket.Close(); err != nil {
-		return err
-	}
+	err = user.socket.Close()
 
 	// broadcast to every connected client
 	// that this user has been disconnected
@@ -110,10 +108,7 @@ func (t *Teamserver) UserLogoutByToken(token string) error {
 		"username": user.username,
 	}))
 
-	// delete the user from the client map
-	t.clients.Delete(token)
-
-	return nil
+	return err
 }
 
 func (t *Teamserver) UserStatus(username string) int {

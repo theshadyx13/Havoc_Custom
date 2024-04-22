@@ -14,7 +14,7 @@ def HcAgentExport( interface ):
 
     globals()[ interface.__name__ ] = interface
 
-    return
+    return interface
 
 def HcAgentExecute(
     uuid: str,
