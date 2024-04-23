@@ -691,8 +691,14 @@ class HcKaine( pyhavoc.agent.HcAgent ):
 
                     parsed_args = i._args_handle( commands )
                     if parsed_args is not None:
-                        self.console_input( input )
-                        i.execute( parsed_args )
+
+                        if i.min_args <= ( len( commands ) - 1 ):
+                            self.console_input( input )
+                            i.execute( parsed_args )
+                        else:
+                            usage = i.parser.format_usage()
+                            self.console_input( input, local_only=True )
+                            self.console_print( usage[ :len( usage ) - 1 ] )
 
                     found = True
 
@@ -959,14 +965,26 @@ class HcKaine( pyhavoc.agent.HcAgent ):
         self,
         token_handle  : int  = 0,
         wait_to_finish: bool = False
-    ) -> str:
-        return self.agent_execute( {
+    ) -> tuple[str, bool, int]:
+
+        ctx = self.agent_execute( {
             "command":   "IoTokenControl",
             "arguments": {
                 "control"     : "uid",
                 "token-handle": token_handle
             }
         }, wait_to_finish )
+
+        if 'error' in ctx:
+            raise Exception( ctx[ 'error' ] )
+
+        if ctx[ 'status' ] != 'STATUS_SUCCESS':
+            raise Exception( ctx[ 'status' ] )
+
+        task = ctx[ 'task-uuid' ]
+        ctx  = ctx[ 'return' ]
+
+        return ctx[ 'uid' ], ctx[ 'is_admin' ], task
 
     def token_revert(
         self,
@@ -977,7 +995,7 @@ class HcKaine( pyhavoc.agent.HcAgent ):
             "arguments": {
                 "control": "revert",
             }
-        }, wait_to_finish )
+        }, wait_to_finish )[ 'return' ]
 
     def token_steal(
         self,
@@ -992,7 +1010,7 @@ class HcKaine( pyhavoc.agent.HcAgent ):
                 "pid"       : process_id,
                 "vault-save": vault_save
             }
-        }, wait_to_finish )
+        }, wait_to_finish )[ 'return' ]
 
     def token_make(
         self,
@@ -1045,6 +1063,7 @@ class HcKaineCommand:
         self.opsec_safe  = True
         self.self_side   = False
         self.parser      = None
+        self.min_args    = 0
 
         return
 
