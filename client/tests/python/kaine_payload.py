@@ -8,6 +8,7 @@ from PySide6.QtWidgets import *
 import time
 import base64
 import argparse
+import shlex
 
 from os.path import exists
 from struct import pack, calcsize
@@ -653,7 +654,7 @@ class HcKaine( pyhavoc.agent.HcAgent ):
         ##
         ## setup available commands
         ##
-        commands       = input.split()
+        commands       = shlex.split( input )
         kaine_commands = []
 
         for KnTaskObject in KAINE_COMMANDS:
@@ -846,7 +847,7 @@ class HcKaine( pyhavoc.agent.HcAgent ):
         self,
         object        : any,
         entry         : str   = "go",
-        parameters    : any   = None,
+        parameters    : any   = b'',
         is_module     : bool  = False,
         base_address  : int   = 0,
         wait_to_finish: bool  = False,
@@ -964,8 +965,30 @@ class HcKaine( pyhavoc.agent.HcAgent ):
     def token_uid(
         self,
         token_handle  : int  = 0,
-        wait_to_finish: bool = False
+        wait_to_finish: bool = True
     ) -> tuple[str, bool, int]:
+        """
+        get the token uid name and elevation status
+
+        :param token_handle:
+            token to get uid from and its elevation status
+
+        :param wait_to_finish:
+            should wait for returned data (default: true)
+
+        :return:
+            returning a tuple -> (uid, elevated, task-uuid)
+
+            uid:
+                the uid string (utf-16le) that has been
+                retrieved from the specified or current token
+
+            elevated:
+                elevation status of the current or specified token
+
+            task-uuid
+                uuid of task
+        """
 
         ctx = self.agent_execute( {
             "command":   "IoTokenControl",
@@ -978,8 +1001,9 @@ class HcKaine( pyhavoc.agent.HcAgent ):
         if 'error' in ctx:
             raise Exception( ctx[ 'error' ] )
 
-        if ctx[ 'status' ] != 'STATUS_SUCCESS':
-            raise Exception( ctx[ 'status' ] )
+        if 'status' in ctx:
+            if ctx[ 'status' ] != 'STATUS_SUCCESS':
+                raise Exception( ctx[ 'status' ] )
 
         task = ctx[ 'task-uuid' ]
         ctx  = ctx[ 'return' ]
@@ -988,29 +1012,139 @@ class HcKaine( pyhavoc.agent.HcAgent ):
 
     def token_revert(
         self,
-        wait_to_finish: bool = False
-    ) -> bool:
-        return self.agent_execute( {
+        wait_to_finish: bool = True
+    ) -> tuple[bool, int]:
+        """
+        revert current impersonated thread token to itself
+
+        :param wait_to_finish:
+            should wait for returned data (default: true)
+             
+        :return: 
+            returning a tuple -> (reverted, task-uuid)
+            
+            reverted: 
+                status if the thread token has been reverted to itself
+
+            task-uuid:
+                uuid of task
+        """
+        
+        ctx = self.agent_execute( {
             "command":   "IoTokenControl",
             "arguments": {
                 "control": "revert",
             }
-        }, wait_to_finish )[ 'return' ]
+        }, wait_to_finish )
+
+        if 'error' in ctx:
+            raise Exception( ctx[ 'error' ] )
+
+        if 'status' in ctx:
+            if ctx[ 'status' ] != 'STATUS_SUCCESS':
+                raise Exception( ctx[ 'status' ] )
+
+        return True, ctx[ 'task-uuid' ]
+
+    def token_impersonate(
+        self,
+        token_handle: int,
+        wait_to_finish: bool = True
+    ) -> tuple[str, int]:
+        """
+        impersonate given token
+
+        :param token_handle:
+            token to impersonate
+
+        :param wait_to_finish:
+            should wait for returned data (default: true)
+
+        :return:
+            returning a tuple -> (uid, task-uuid)
+
+            uid:
+                username of the impersonated token
+
+            task-uuid:
+                uuid of task
+        """
+
+        ctx = self.agent_execute( {
+            "command":   "IoTokenControl",
+            "arguments": {
+                "control":      "impersonate",
+                "token-handle": token_handle
+            }
+        }, wait_to_finish )
+
+        if 'error' in ctx:
+            raise Exception( ctx[ 'error' ] )
+
+        if 'status' in ctx:
+            if ctx[ 'status' ] != 'STATUS_SUCCESS':
+                raise Exception( ctx[ 'status' ] )
+
+        return ctx[ 'return' ], ctx[ 'task-uuid' ]
 
     def token_steal(
         self,
         process_id    : int,
+        impersonate   : bool = True,
         vault_save    : bool = True,
-        wait_to_finish: bool = False
-    ) -> int:
-        return self.agent_execute( {
+        wait_to_finish: bool = True
+    ) -> tuple[int, str, int]:
+        """
+        process token stealing function
+
+        :param process_id:
+            process id to steal token from
+
+        :param impersonate
+            if the stolen token should be impersonated
+
+        :param vault_save:
+            if the stolen token should be saved to the vault (default: true)
+
+        :param wait_to_finish:
+            should wait for returned data (default: true)
+
+        :return:
+            returning a tuple -> (token-handle, uid, task-uuid)
+
+            token-handle:
+                process token handle that has been
+                stolen from the specified token
+
+            uid:
+                the uid string (utf-16le) that has been
+                retrieved from the stolen token
+
+            task-uuid:
+                uuid task
+        """
+
+        ctx = self.agent_execute( {
             "command":   "IoTokenControl",
             "arguments": {
-                "control"   : "steal",
-                "pid"       : process_id,
-                "vault-save": vault_save
+                "control"    : "steal",
+                "pid"        : process_id,
+                "impersonate": impersonate,
+                "vault-save" : vault_save
             }
-        }, wait_to_finish )[ 'return' ]
+        }, wait_to_finish )
+
+        if 'error' in ctx:
+            raise Exception( ctx[ 'error' ] )
+
+        if 'status' in ctx:
+            if ctx[ 'status' ] != 'STATUS_SUCCESS':
+                raise Exception( ctx[ 'status' ] )
+
+        task = ctx[ 'task-uuid' ]
+        ctx  = ctx[ 'return' ]
+
+        return ctx[ 'handle' ], ctx[ 'uid' ], task
 
     def token_make(
         self,
@@ -1019,9 +1153,49 @@ class HcKaine( pyhavoc.agent.HcAgent ):
         password      : str,
         local_token   : bool = True,
         vault_save    : bool = True,
-        wait_to_finish: bool = False
+        wait_to_finish: bool = True
     ) -> int:
-        return self.agent_execute( {
+        """
+        generate token from valid credentials
+
+        :param domain:
+            domain name
+
+        :param username:
+            user name
+
+        :param password:
+            password
+
+        :param local_token:
+            if local token should be generated to access other users directories
+
+        :param vault_save:
+            save token to vault (default: true)
+
+        :param wait_to_finish:
+            should wait for returned data (default: true)
+
+        :return:
+            returning a tuple -> (token-handle, uid, task-uuid)
+
+            token-handle:
+                process token handle that has been
+                stolen from the specified token
+
+            uid:
+                the uid string (utf-16le) that has been
+                retrieved from the stolen token.
+
+                Tho it won't be in the name of the newly
+                generated user token rather it is going
+                to be applied to the current token (when impersonated).
+
+            task-uuid:
+                uuid task
+        """
+
+        ctx = self.agent_execute( {
             "command":   "IoTokenControl",
             "arguments": {
                 "control"     : "make",
@@ -1033,11 +1207,23 @@ class HcKaine( pyhavoc.agent.HcAgent ):
             }
         }, wait_to_finish )
 
+        if 'error' in ctx:
+            raise Exception( ctx[ 'error' ] )
+
+        if 'status' in ctx:
+            if ctx[ 'status' ] != 'STATUS_SUCCESS':
+                raise Exception( ctx[ 'status' ] )
+
+        task = ctx[ 'task-uuid' ]
+        ctx  = ctx[ 'return' ]
+
+        return ctx[ 'handle' ], ctx[ 'uid' ], task
+
     def token_vault(
         self,
         action        : str,
         token_handle  : int  = 0,
-        wait_to_finish: bool = False
+        wait_to_finish: bool = True
     ) -> str:
         return self.agent_execute( {
             "command":   "IoTokenControl",
@@ -1080,7 +1266,7 @@ class HcKaineCommand:
         args: list[ str ]
     ):
         parser_args = None
-        self.parser = KnArgumentParser( prog=self.command, exit_on_error=False )
+        self.parser = KnArgumentParser( prog=self.command, description=self.description, exit_on_error=False )
 
         self.arguments()
 

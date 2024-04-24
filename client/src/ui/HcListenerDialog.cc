@@ -229,12 +229,12 @@ auto HcListenerDialog::AddProtocol(
     protocol.widget->setObjectName( "HcListenerDialog.Protocol." + QString( name.c_str() ) );
 
     try {
+        py11::gil_scoped_acquire gil;
+
         protocol.instance = object();
         protocol.instance.attr( "_hc_set_name" )( name );
         protocol.instance.attr( "_hc_main" )();
-        py11::gil_scoped_release release;
     } catch ( py11::error_already_set &eas ) {
-        py11::gil_scoped_release release;
         Helper::MessageBox(
             QMessageBox::Icon::Critical,
             "Listener loading error",
