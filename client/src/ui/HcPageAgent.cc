@@ -226,14 +226,8 @@ auto HcPageAgent::addAgent(
             } catch ( py11::error_already_set &eas ) {
                 spdlog::error( "failed to invoke agent interface [uuid: {}] [type: {}]: {}", agent->uuid, agent->type, eas.what() );
             }
-
-            //
-            // we don't need it anymore so lets release it
-            //
-            // HcPythonReleaseGil();
         }
     }
-
 
     agents.push_back( agent );
 
