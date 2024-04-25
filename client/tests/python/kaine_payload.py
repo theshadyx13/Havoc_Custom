@@ -1260,6 +1260,72 @@ class HcKaine( pyhavoc.agent.HcAgent ):
 
         return ctx[ 'current-token' ], ctx[ 'return' ], ctx[ 'task-uuid' ]
 
+    def token_vault_clear(
+        self,
+        wait_to_finish: bool = True
+    ) -> int:
+        """
+        clear all captured and saved tokens inside the vault
+
+        :param wait_to_finish:
+            should wait for returned data (default: true)
+
+        :return:
+            uuid task
+        """
+
+        ctx = self.agent_execute( {
+            "command":   "IoTokenControl",
+            "arguments": {
+                "control" : "vault-clear",
+            }
+        }, wait_to_finish )
+
+        if 'error' in ctx:
+            raise Exception( ctx[ 'error' ] )
+
+        if 'status' in ctx:
+            if ctx[ 'status' ] != 'STATUS_SUCCESS':
+                raise Exception( ctx[ 'status' ] )
+
+        return ctx[ 'task-uuid' ]
+
+    def token_vault_remove(
+        self,
+        token_handle  : int,
+        wait_to_finish: bool = True
+    ) -> int:
+        """
+        clear all captured and saved tokens inside the vault
+
+        :param token_handle
+            token handle to remove
+
+        :param wait_to_finish:
+
+            should wait for returned data (default: true)
+
+        :return:
+            uuid task
+        """
+
+        ctx = self.agent_execute( {
+            "command":   "IoTokenControl",
+            "arguments": {
+                "control"     : "vault-remove",
+                "token-handle": token_handle
+            }
+        }, wait_to_finish )
+
+        if 'error' in ctx:
+            raise Exception( ctx[ 'error' ] )
+
+        if 'status' in ctx:
+            if ctx[ 'status' ] != 'STATUS_SUCCESS':
+                raise Exception( ctx[ 'status' ] )
+
+        return ctx[ 'task-uuid' ]
+
 @pyhavoc.agent.HcAgentExport
 class HcKaineCommand:
 
