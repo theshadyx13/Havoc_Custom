@@ -580,13 +580,28 @@ class KnObjectModule:
             pass_return=pass_return
         )
 
-        if 'task-uuid' in ctx:
-            self.__uuid = ctx[ 'task-uuid' ]
+        self.__status = ctx[ 'status' ]
+        self.__uuid   = ctx[ 'task-uuid' ]
+
+        if ctx[ 'status' ] == "STATUS_SUCCESS":
+            self.__handle = ctx[ 'handle' ]
+            self.__return = ctx[ 'return' ].decode( 'utf-8' )
+        else:
+            self.__error = ctx[ 'return' ].decode( 'utf-8' )
 
         return ctx
 
     def free( self ):
-        return self.__agent.object_free( self.handle(), wait_to_finish=True )
+
+        ctx = self.__agent.object_free( self.handle(), wait_to_finish=True )
+
+        self.__status = ctx[ 'status' ]
+        self.__uuid   = ctx[ 'task-uuid' ]
+
+        if self.__status != "STATUS_SUCCESS":
+            self.__error = ctx[ 'return' ].decode( 'utf-8' )
+
+        return
 
 class HcTableDict( dict ):
 
