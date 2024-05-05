@@ -11,7 +11,7 @@ import argparse
 import shlex
 
 from os.path import exists
-from struct import pack, calcsize
+from struct import pack, unpack, calcsize
 
 KAINE_COMMANDS: list = []
 
@@ -446,6 +446,49 @@ class KnPacker:
         self.size   += 2
 
 @pyhavoc.agent.HcAgentExport
+class KnParser:
+
+    def __init__(
+        self,
+        buffer: bytes
+    ):
+        self.buffer: bytes = buffer
+
+        return
+
+    def length( self ) -> int:
+        return len( self.buffer )
+
+    def parse_int( self ) -> int:
+        if self.length() < 4:
+            return 0
+
+        val = unpack( "<I", self.buffer[ :4 ] )
+        self.buffer = self.buffer[ 4: ]
+
+        return val[ 0 ]
+
+    def parse_bytes( self ) -> bytes:
+        length      = self.parse_int()
+        buf         = self.buffer[ :length ]
+        self.buffer = self.buffer[ length: ]
+
+        return buf
+
+    def parse_pad( self, length: int ) -> bytes:
+        if self.length() < length:
+            return b''
+
+        buf         = self.buffer[ :length ]
+        self.buffer = self.buffer[ length: ]
+
+        return buf
+
+    def parse_str( self ) -> str:
+        return self.parse_bytes().decode( 'utf-8' )
+
+
+@pyhavoc.agent.HcAgentExport
 class KnObjectModule:
 
     def __init__(
@@ -545,7 +588,7 @@ class KnObjectModule:
         *args,
         data       : bytes = b'',
         object_uuid: int   = 0,
-        pass_return: bool  = False
+        pass_return: bool  = True
     ) -> dict:
 
         packer = KnPacker()
@@ -584,8 +627,7 @@ class KnObjectModule:
         self.__uuid   = ctx[ 'task-uuid' ]
 
         if ctx[ 'status' ] == "STATUS_SUCCESS":
-            self.__handle = ctx[ 'handle' ]
-            self.__return = ctx[ 'return' ].decode( 'utf-8' )
+            self.__return = ctx[ 'return' ]
         else:
             self.__error = ctx[ 'return' ].decode( 'utf-8' )
 
@@ -671,6 +713,9 @@ class HcKaine( pyhavoc.agent.HcAgent ):
         ##
         commands       = shlex.split( input )
         kaine_commands = []
+
+        if len( commands ) == 0:
+            return
 
         for KnTaskObject in KAINE_COMMANDS:
             kaine_commands.append( KnTaskObject( self ) )

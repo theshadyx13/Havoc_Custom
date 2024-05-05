@@ -69,11 +69,19 @@ HavocClient::HavocClient() {
     const auto family = "Monospace";
     const auto size   = 9;
 
+#ifdef Q_OS_MAC
+    //
+    // orignal fix and credit: https://github.com/HavocFramework/Havoc/pull/466/commits/8b75de9b4632a266badf64e1cc22e57cc55a5b7c
+    //
+    QApplication::setStyle( "Fusion" );
+#endif
+
+    //
+    // set font
+    //
     QTextCodec::setCodecForLocale( QTextCodec::codecForName( "UTF-8" ) );
     QApplication::setFont( QFont( family, size ) );
-    QTimer::singleShot( 10, [&]() {
-        QApplication::setFont( QFont( family, size ) );
-    } );
+    QTimer::singleShot( 10, [&]() { QApplication::setFont( QFont( family, size ) ); } );
 }
 
 HavocClient::~HavocClient() = default;
