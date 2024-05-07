@@ -459,6 +459,9 @@ class KnParser:
     def length( self ) -> int:
         return len( self.buffer )
 
+
+
+
     def parse_int( self ) -> int:
         if self.length() < 4:
             return 0
