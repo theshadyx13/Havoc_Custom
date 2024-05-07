@@ -28,6 +28,7 @@ HcConsole::HcConsole(
 
     Input = new QLineEdit( this );
     Input->setObjectName( "Input" );
+    Input->addAction( tr(""), QKeySequence( Qt::CTRL | Qt::Key::Key_L ), this, [&](){ Console->clear(); } );
 
     QObject::connect( Input, &QLineEdit::returnPressed, this, &HcConsole::inputEnter );
 
