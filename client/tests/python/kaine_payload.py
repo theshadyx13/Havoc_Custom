@@ -648,6 +648,7 @@ class KnObjectModule:
 
         return
 
+
 class HcTableDict( dict ):
 
     def __init__( self, kaine_agent ):

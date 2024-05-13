@@ -5,14 +5,7 @@ endif
 # main build target. compiles the teamserver and client
 all: ts-build client-build
 
-# teamserver building target
-ts-build:
-	@ echo "[*] building server"
-	@ ./server/Install.sh
-	@ cd server; GO111MODULE="on" go build -ldflags="-s -w -X cmd.VersionCommit=$(git rev-parse HEAD)" -o ../havoc main.go
-	@ sudo setcap 'cap_net_bind_service=+ep' havoc # this allows you to run the server as a regular user
-
-dev-ts-compile:
+ts-compile:
 	@ echo "[*] compile server"
 	@ cd server; GO111MODULE="on" go build -ldflags="-s -w -X cmd.VersionCommit=$(git rev-parse HEAD)" -o ../havoc main.go 
 
