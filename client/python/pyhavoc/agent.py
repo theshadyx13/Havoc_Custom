@@ -16,6 +16,12 @@ def HcAgentExport( interface ):
 
     return interface
 
+def HcAgentRegisterCallback( uuid, callback ):
+    agent.HcAgentRegisterCallback( uuid, callback )
+
+def HcAgentUnRegisterCallback( callback ):
+    agent.HcAgentUnRegisterCallback( callback )
+
 def HcAgentExecute(
     uuid: str,
     data: dict,

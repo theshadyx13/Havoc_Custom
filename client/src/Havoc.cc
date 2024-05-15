@@ -460,3 +460,54 @@ auto HavocClient::AgentObject(
 
     return std::nullopt;
 }
+
+auto HavocClient::Callbacks() -> std::vector<std::string>
+{
+    auto names = std::vector<std::string>();
+
+    for ( auto& callback : callbacks ) {
+        names.push_back( callback.name );
+    }
+
+    return names;
+}
+
+auto HavocClient::AddCallbackObject(
+    const std::string&  uuid,
+    const py11::object& callback
+) -> void {
+    callbacks.push_back( NamedObject{
+        .name   = uuid,
+        .object = callback
+    } );
+}
+
+auto HavocClient::RemoveCallbackObject(
+    const py11::object& callback
+) -> void {
+    //
+    // iterate over the callbacks
+    //
+    for ( auto iter = callbacks.begin(); iter != callbacks.end(); ++iter ) {
+        if ( *iter->object == callback ) {
+            callbacks.erase( iter );
+            break;
+        }
+    }
+}
+
+auto HavocClient::CallbackObject(
+    const std::string& uuid
+) -> std::optional<py11::object> {
+    //
+    // iterate over registered callbacks
+    //
+    for ( auto object : callbacks ) {
+        if ( object.name == uuid ) {
+            return object.object;
+        }
+    }
+
+    return std::nullopt;
+}
+

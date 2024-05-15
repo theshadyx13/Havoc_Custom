@@ -1,3 +1,5 @@
+import uuid
+
 import pyhavoc
 
 import PySide6
@@ -9,6 +11,8 @@ import time
 import base64
 import argparse
 import shlex
+import random
+import string
 
 from os.path import exists
 from struct import pack, unpack, calcsize
@@ -589,9 +593,10 @@ class KnObjectModule:
         self,
         function,
         *args,
-        data       : bytes = b'',
-        object_uuid: int   = 0,
-        pass_return: bool  = True
+        data       : bytes  = b'',
+        object_uuid: int    = 0,
+        pass_return: bool   = True,
+        callback   : object = None
     ) -> dict:
 
         packer = KnPacker()
@@ -623,7 +628,8 @@ class KnObjectModule:
             entry=function,
             wait_to_finish=True,
             object_uuid=object_uuid,
-            pass_return=pass_return
+            pass_return=pass_return,
+            callback=callback
         )
 
         self.__status = ctx[ 'status' ]
@@ -910,14 +916,15 @@ class HcKaine( pyhavoc.agent.HcAgent ):
     def object_execute(
         self,
         object        : any,
-        entry         : str   = "go",
-        parameters    : any   = b'',
-        is_module     : bool  = False,
-        base_address  : int   = 0,
-        wait_to_finish: bool  = False,
-        object_uuid   : int   = 0,
-        task_uuid     : int   = 0,
-        pass_return   : bool  = False
+        entry         : str    = "go",
+        parameters    : any    = b'',
+        is_module     : bool   = False,
+        base_address  : int    = 0,
+        wait_to_finish: bool   = False,
+        object_uuid   : int    = 0,
+        task_uuid     : int    = 0,
+        callback      : object = None,
+        pass_return   : bool   = False
     ) -> dict:
         """
         execute an object file in memory
@@ -957,6 +964,9 @@ class HcKaine( pyhavoc.agent.HcAgent ):
         :param task_uuid
             tasking id to use for the execution of the object file
 
+        :param callback
+            callback to call for intput
+
         :param pass_return
             pass return buffer to the invoked function name
 
@@ -976,9 +986,10 @@ class HcKaine( pyhavoc.agent.HcAgent ):
             status of executing the object file
         """
 
-        wait: bool = wait_to_finish
-        resp: dict = {}
-        obj : any  = None
+        wait          : bool = wait_to_finish
+        resp          : dict = {}
+        obj           : any  = None
+        callback_uuid : str  = ''
 
         ##
         ## we have to wait til we receive back the
@@ -998,19 +1009,27 @@ class HcKaine( pyhavoc.agent.HcAgent ):
             }
 
         ##
+        ## register callback
+        ##
+        if callback is not None:
+            callback_uuid = "Kaine-" + str( uuid.uuid4() )
+            pyhavoc.agent.HcAgentRegisterCallback( callback_uuid, callback )
+
+        ##
         ## task the agent to invoke an object file
         ##
         resp = self.agent_execute( {
                 "command":   "IoObjectControl",
                 "arguments": {
-                    "object"      : obj,
-                    "entry"       : entry,
-                    "args"        : base64.b64encode( parameters ).decode( 'utf-8' ),
-                    "module"      : is_module,
-                    "address"     : base_address,
-                    "object-uuid" : object_uuid,
-                    "task-uuid"   : task_uuid,
-                    "pass-return" : pass_return,
+                    "object"        : obj,
+                    "entry"         : entry,
+                    "args"          : base64.b64encode( parameters ).decode( 'utf-8' ),
+                    "module"        : is_module,
+                    "address"       : base_address,
+                    "object-uuid"   : object_uuid,
+                    "task-uuid"     : task_uuid,
+                    "callback-uuid" : callback_uuid,
+                    "pass-return"   : pass_return,
                 }
             },
             wait

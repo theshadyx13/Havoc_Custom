@@ -41,6 +41,36 @@ auto HcAgentConsoleWrite(
 
 /*!
  * @brief
+ *  register a callback
+ *
+ * @param uuid
+ *  uuid of the callback to be registered
+ *
+ * @param callback
+ *  callback function to call
+ */
+auto HcAgentRegisterCallback(
+    const std::string&  uuid,
+    const py11::object& callback
+) -> void {
+    Havoc->AddCallbackObject( uuid, callback );
+}
+
+/*!
+ * @brief
+ *  unregister a callback
+ *
+ * @param callback
+ *  callback function to remove and unregister
+ */
+auto HcAgentUnRegisterCallback(
+    const py11::object& callback
+) -> void {
+    Havoc->RemoveCallbackObject( callback );
+}
+
+/*!
+ * @brief
  *  send agent command to the server implant plugin handler
  *
  * @param uuid

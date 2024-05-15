@@ -388,7 +388,5 @@ auto HcAgentConsole::inputEnter(
         } else {
             emit agent->emitter.ConsoleWrite( agent->uuid.c_str(), "[!] No agent script handler registered for this type" );
         }
-
-        // HcPythonReleaseGil();
     }, Meta, input );
 }
