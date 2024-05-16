@@ -1,5 +1,5 @@
-#ifndef HAVOCCLIENT_HCPAGEBUILDER_H
-#define HAVOCCLIENT_HCPAGEBUILDER_H
+#ifndef HAVOCCLIENT_HCDIALOGBUILDER_H
+#define HAVOCCLIENT_HCDIALOGBUILDER_H
 
 #include <QtCore/QVariant>
 #include <QtWidgets/QApplication>
@@ -22,7 +22,7 @@ struct Builder {
     QWidget*     widget;
 };
 
-class HcPageBuilder : public QWidget
+class HcDialogBuilder : public QDialog
 {
 public:
     QGridLayout*    gridLayout        = nullptr;
@@ -42,7 +42,7 @@ public:
 
     std::vector<Builder> Builders = {};
 
-    explicit HcPageBuilder( QWidget* parent = nullptr );
+    explicit HcDialogBuilder( QWidget* parent = nullptr );
 
     auto retranslateUi() -> void;
 
@@ -51,7 +51,7 @@ public:
         const py11::object& object
     ) -> void;
 
-    auto RefreshBuilders() -> void;
+    auto Release() -> void;
 
 private slots:
     auto PressedGenerate() -> void;
@@ -61,4 +61,4 @@ private slots:
 
 QT_END_NAMESPACE
 
-#endif //HAVOCCLIENT_HCPAGEBUILDER_H
+#endif //HAVOCCLIENT_HCDIALOGBUILDER_H

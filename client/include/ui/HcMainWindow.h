@@ -38,12 +38,11 @@ public:
     HavocButton*        ButtonScripts   = nullptr;
     HavocButton*        ButtonAgents    = nullptr;
     HavocButton*        ButtonServer    = nullptr;
-    HavocButton*        ButtonPayload   = nullptr;
     QSpacerItem*        Spacer          = nullptr;
     QStackedWidget*     StackedWidget   = nullptr;
     HcPageAgent*        PageAgent       = nullptr;
     HcPageListener*     PageListener    = nullptr;
-    HcPageBuilder*      PagePayload     = nullptr;
+    // HcPageBuilder*      PagePayload     = nullptr;
     QWidget*            PageServer      = nullptr;
     HcPagePlugins*      PageScripts     = nullptr;
     QWidget*            PageSettings    = nullptr;
@@ -60,7 +59,6 @@ public:
 
     auto switchPageAgent() -> void;
     auto switchPageListener() -> void;
-    auto switchPagePayload() -> void;
     auto switchPageServer() -> void;
     auto switchPageScripts() -> void;
     auto switchPageSettings() -> void;

@@ -60,13 +60,13 @@ auto HcAgentRegisterCallback(
  * @brief
  *  unregister a callback
  *
- * @param callback
- *  callback function to remove and unregister
+ * @param uuid
+ *  callback uuid to remove and unregister
  */
 auto HcAgentUnRegisterCallback(
-    const py11::object& callback
+    const std::string& uuid
 ) -> void {
-    Havoc->RemoveCallbackObject( callback );
+    Havoc->RemoveCallbackObject( uuid );
 }
 
 /*!

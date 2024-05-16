@@ -46,10 +46,6 @@ PYBIND11_EMBEDDED_MODULE( _pyhavoc, m ) {
         //
         // Havoc Ui functions and utilities
         //
-        ui.def( "HcUiPayloadBuilderObjName", [] () -> py11::str {
-            return ( Havoc->Gui->PagePayload->objectName().toStdString() );
-        } );
-
         ui.def( "HcUiListenerObjName", []() -> py11::str {
             return ( "HcListenerDialog.StackedProtocols" );
         } );

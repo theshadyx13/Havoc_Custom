@@ -14,10 +14,14 @@ auto HcAgentConsoleWrite(
     const std::string& content
 ) -> void;
 
-auto HcAgentCallback(
+auto HcAgentRegisterCallback(
     const std::string&  uuid,
     const py11::object& callback
-);
+) -> void;
+
+auto HcAgentUnRegisterCallback(
+    const std::string& uuid
+) -> void;
 
 auto HcAgentExecute(
     const std::string& uuid,

@@ -58,7 +58,7 @@ set( HAVOC_INCLUDE
         include/ui/HcListenerDialog.h
 
         include/ui/HcPageAgent.h
-        include/ui/HcPageBuilder.h
+        include/ui/HcDialogBuilder.h
         include/ui/HcPageListener.h
         include/ui/HcPageScript.h
 

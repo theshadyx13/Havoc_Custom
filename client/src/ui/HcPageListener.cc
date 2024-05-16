@@ -13,7 +13,7 @@ HcPageListener::HcPageListener() {
     ActiveLabel->setObjectName( QString::fromUtf8("LabelDisplayListenerActive" ) );
     ActiveLabel->setProperty( "HcLabelDisplay", "true" );
 
-    horizontalSpacer  = new QSpacerItem( 1157, 20, QSizePolicy::Expanding, QSizePolicy::Minimum );
+    horizontalSpacer  = new QSpacerItem( 40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum );
     ButtonNewListener = new QPushButton( this );
     ButtonNewListener->setObjectName( QString::fromUtf8( "ButtonNewListener" ) );
     ButtonNewListener->setProperty( "HcButton", "true" );
@@ -65,9 +65,9 @@ HcPageListener::HcPageListener() {
     Splitter->addWidget( TabWidget );
     Splitter->handle( 1 )->setEnabled( false ); /* disabled by default */
 
-    gridLayout->addWidget( ButtonNewListener, 0, 0, 1, 1 );
+    gridLayout->addWidget( ActiveLabel, 0, 0, 1, 1 );
     gridLayout->addItem( horizontalSpacer, 0, 1, 1, 1 );
-    gridLayout->addWidget( ActiveLabel, 0, 2, 1, 1 );
+    gridLayout->addWidget( ButtonNewListener, 0, 2, 1, 1 );
     gridLayout->addWidget( Splitter, 1, 0, 1, 3 );
 
     retranslateUi();

@@ -244,11 +244,6 @@ class HcKaineBuilder( pyhavoc.ui.HcPayloadView ):
 
         self.gridLayout_5.addWidget(self.GroupCoreSettings, 1, 0, 1, 2)
 
-        self.GroupExecuteable = QGroupBox(self.ScrollAreaWidget)
-        self.GroupExecuteable.setObjectName(u"GroupExecuteable")
-
-        self.gridLayout_5.addWidget(self.GroupExecuteable, 0, 2, 2, 2)
-
         self.ScrollAreaStack.setWidget(self.ScrollAreaWidget)
 
         self.gridLayout.addWidget(self.ScrollAreaStack, 0, 0, 1, 1)
@@ -273,7 +268,6 @@ class HcKaineBuilder( pyhavoc.ui.HcPayloadView ):
         self.LabelSleep.setText(QCoreApplication.translate("KaineBuilder", u"Sleep: ", None))
         self.LabelJitter.setText(QCoreApplication.translate("KaineBuilder", u"Jitter (%): ", None))
         self.CheckIndirectSyscall.setText(QCoreApplication.translate("KaineBuilder", u"Indirect Syscall", None))
-        self.GroupExecuteable.setTitle(QCoreApplication.translate("KaineBuilder", u"Executable:", None))
 
         QMetaObject.connectSlotsByName( widget )
 

@@ -12,6 +12,7 @@
 #include <QtWidgets/QTabWidget>
 #include <QtWidgets/QTableWidget>
 #include <QtWidgets/QWidget>
+#include <QtWidgets/QPushButton>
 
 #include <ui/HcConsole.h>
 #include <core/HcAgent.h>
@@ -44,6 +45,10 @@ public:
     QLabel*           AgentDisplayerSessions = nullptr;
     QLabel*           AgentDisplayerTargets  = nullptr;
     QLabel*           AgentDisplayerPivots   = nullptr;
+    QToolButton*      AgentActionButton      = nullptr;
+    QMenu*            AgentActionMenu        = nullptr;
+    QAction*          ActionPayload          = nullptr;
+    QAction*          ActionShowHidden       = nullptr;
     QSpacerItem*      horizontalSpacer       = nullptr;
     QTableWidgetItem* TitleAgentID           = nullptr;
     QTableWidgetItem* TitleInternal          = nullptr;
@@ -97,6 +102,14 @@ public:
         const std::string& uuid,
         const std::string& format,
         const std::string& output = ""
+    ) -> void;
+
+    auto actionShowHidden(
+        bool checked
+    ) -> void;
+
+    auto actionPayloadBuilder(
+        bool checked
     ) -> void;
 };
 

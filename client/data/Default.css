@@ -179,11 +179,6 @@ QLabel[HcLabelDisplay="true"] {
     font-weight: bold;
 }
 
-QLabel[listenerLabel="true"] {
-    background-color: #282a36;
-    font-weight: bold;
-}
-
 QTextEdit {
     background-color: #44475A;
     color: #f8f8f2;
@@ -243,20 +238,24 @@ QPushButton[HcButtonUsed="false"] {
     border-left-width: 2px;
 }
 
-QPushButton[HcButton="true"] {
-    background-color: #44475a;
+QToolButton, QPushButton[HcButton="true"] {
     color: #f8f8f2;
-    font-weight: bold;
-    border: 1px solid #44475a;
     border-radius: 2px;
-    padding: 4px 8px 4px 8px;
+    border:  1px solid #44475a;
+    padding: 3px 6px 3px 6px;
+    background-color: #44475a;
+    font-weight: bold;
+}
+
+QToolButton::menu-indicator[HcButton="true"] {
+    background: transparent;
 }
 
 QPushButton[HcButtonPurple="true"] {
     background-color: #BD93F9;
 }
 
-QPushButton:pressed[HcButton="true"] {
+QToolButton:pressed, QPushButton:pressed[HcButton="true"] {
     border: 1px solid #bd93f9;
     background-color: #282A36;
     color: #f8f8f2;

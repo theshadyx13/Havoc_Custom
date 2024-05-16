@@ -374,7 +374,7 @@ auto HavocClient::AddBuilder(
         .object = builder
     } );
 
-    Havoc->Gui->PagePayload->AddBuilder( name, builder );
+    // Havoc->Gui->PagePayload->AddBuilder( name, builder );
 }
 
 auto HavocClient::BuilderObject(
@@ -408,7 +408,6 @@ auto HavocClient::AddListener(
     listeners.push_back( listener );
 
     Gui->PageListener->addListener( listener );
-    Gui->PagePayload->RefreshBuilders();
 }
 
 auto HavocClient::Listeners() -> std::vector<std::string>
@@ -483,13 +482,13 @@ auto HavocClient::AddCallbackObject(
 }
 
 auto HavocClient::RemoveCallbackObject(
-    const py11::object& callback
+    const std::string& callback
 ) -> void {
     //
     // iterate over the callbacks
     //
     for ( auto iter = callbacks.begin(); iter != callbacks.end(); ++iter ) {
-        if ( *iter->object == callback ) {
+        if ( iter->name == callback ) {
             callbacks.erase( iter );
             break;
         }

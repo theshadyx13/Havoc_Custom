@@ -2,7 +2,9 @@
 #include <ui/HcPageAgent.h>
 #include <QtConcurrent/QtConcurrent>
 
-HcPageAgent::HcPageAgent(QWidget* parent ) : QWidget(parent ) {
+HcPageAgent::HcPageAgent(
+    QWidget* parent
+) : QWidget( parent ) {
 
     if ( objectName().isEmpty() ) {
         setObjectName( QString::fromUtf8( "PageAgent" ) );
@@ -77,34 +79,51 @@ HcPageAgent::HcPageAgent(QWidget* parent ) : QWidget(parent ) {
     AgentDisplayerSessions->setProperty( "HcLabelDisplay", "true" );
 
     AgentDisplayerTargets = new QLabel( this );
-    AgentDisplayerTargets->setObjectName( "LabelDisplayTargets" );
+    AgentDisplayerTargets->setObjectName( "AgentDisplayTargets" );
     AgentDisplayerTargets->setProperty( "HcLabelDisplay", "true" );
 
     AgentDisplayerPivots = new QLabel( this );
-    AgentDisplayerPivots->setObjectName( "LabelDisplayPivots" );
+    AgentDisplayerPivots->setObjectName( "AgentDisplayPivots" );
     AgentDisplayerPivots->setProperty( "HcLabelDisplay", "true" );
 
     AgentDisplayerElevated = new QLabel( this );
-    AgentDisplayerElevated->setObjectName( "LabelDisplayElevated" );
+    AgentDisplayerElevated->setObjectName( "AgentDisplayElevated" );
     AgentDisplayerElevated->setProperty( "HcLabelDisplay", "true" );
 
     horizontalSpacer = new QSpacerItem( 40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum );
+    AgentActionMenu  = new QMenu( this );
+
+    ActionPayload = AgentActionMenu->addAction( "Payload Builder" );
+    ActionPayload->setCheckable( true );
+
+    ActionShowHidden = AgentActionMenu->addAction( "Show Hidden" );
+    ActionShowHidden->setCheckable( true );
+
+    AgentActionButton = new QToolButton( this );
+    AgentActionButton->setObjectName( "AgentActionButton" );
+    AgentActionButton->setText( "Actions" );
+    AgentActionButton->setProperty( "HcButton", "true" );
+    AgentActionButton->setMenu( AgentActionMenu );
+    AgentActionButton->setPopupMode( QToolButton::InstantPopup );
 
     Splitter->addWidget( AgentTable );
     Splitter->addWidget( AgentTab );
     Splitter->handle( 1 )->setEnabled( SplitterMoveToggle ); /* disabled by default */
 
-    QObject::connect( AgentTable, &QTableWidget::customContextMenuRequested, this, &HcPageAgent::handleAgentMenu );
-    QObject::connect( AgentTable, &QTableWidget::doubleClicked, this, &HcPageAgent::handleAgentDoubleClick );
-    QObject::connect( AgentTab,   &QTabWidget::tabCloseRequested, this, &HcPageAgent::tabCloseRequested );
+    QObject::connect( AgentTable,       &QTableWidget::customContextMenuRequested, this, &HcPageAgent::handleAgentMenu );
+    QObject::connect( AgentTable,       &QTableWidget::doubleClicked, this, &HcPageAgent::handleAgentDoubleClick );
+    QObject::connect( AgentTab,         &QTabWidget::tabCloseRequested, this, &HcPageAgent::tabCloseRequested );
+    QObject::connect( ActionPayload,    &QAction::triggered, this, &HcPageAgent::actionPayloadBuilder );
+    QObject::connect( ActionShowHidden, &QAction::triggered, this, &HcPageAgent::actionShowHidden );
 
     gridLayout->addWidget( ComboAgentView,         0, 0, 1, 1 );
-    gridLayout->addWidget( Splitter,               1, 0, 1, 6 );
+    gridLayout->addWidget( Splitter,               1, 0, 1, 7 );
     gridLayout->addWidget( AgentDisplayerSessions, 0, 2, 1, 1 );
     gridLayout->addWidget( AgentDisplayerTargets,  0, 1, 1, 1 );
     gridLayout->addWidget( AgentDisplayerPivots,   0, 3, 1, 1 );
     gridLayout->addWidget( AgentDisplayerElevated, 0, 4, 1, 1 );
     gridLayout->addItem( horizontalSpacer,         0, 5, 1, 1 );
+    gridLayout->addWidget( AgentActionButton,      0, 6, 1, 1 );
 
     retranslateUi( );
 
@@ -164,6 +183,10 @@ auto HcPageAgent::addAgent(
     auto last    = QString();
     auto row     = AgentTable->rowCount();
     auto sort    = AgentTable->isSortingEnabled();
+
+    //
+    // TODO: sanity check
+    //
 
     uuid    = QString( metadata[ "uuid" ].get<std::string>().c_str() );
     user    = QString( metadata[ "meta" ][ "user" ].get<std::string>().c_str() );
@@ -356,6 +379,21 @@ auto HcPageAgent::Agent(
     }
 
     return std::nullopt;
+}
+
+auto HcPageAgent::actionShowHidden(
+    bool checked
+) -> void {
+
+}
+
+auto HcPageAgent::actionPayloadBuilder(
+    bool checked
+) -> void {
+    auto dialog = new HcDialogBuilder;
+
+    dialog->exec();
+    dialog->Release();
 }
 
 HcAgentConsole::HcAgentConsole(

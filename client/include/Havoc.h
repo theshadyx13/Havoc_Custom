@@ -10,7 +10,7 @@
 
 #include <ui/HcPageAgent.h>
 #include <ui/HcPageListener.h>
-#include <ui/HcPageBuilder.h>
+#include <ui/HcDialogBuilder.h>
 #include <ui/HcPageScript.h>
 
 #include <ui/HcListenerDialog.h>
@@ -52,7 +52,7 @@ class HavocClient : public QWidget {
     std::vector<NamedObject>  protocols  = {};
     std::vector<NamedObject>  builders   = {};
     std::vector<NamedObject>  agents     = {};
-
+    std::vector<NamedObject>  callbacks  = {};
 public:
     HcMainWindow* Gui = nullptr;
     HcTheme       Theme;
@@ -86,6 +86,24 @@ public:
     auto setupThreads() -> void;
 
     //
+    // Callbacks
+    //
+    auto Callbacks() -> std::vector<std::string>;
+
+    auto AddCallbackObject(
+        const std::string&  uuid,
+        const py11::object& callback
+    ) -> void;
+
+    auto RemoveCallbackObject(
+        const std::string& uuid
+    ) -> void;
+
+    auto CallbackObject(
+        const std::string& uuid
+    ) -> std::optional<py11::object>;
+
+    //
     // Listeners
     //
     auto Listeners() -> std::vector<std::string>;
@@ -101,6 +119,8 @@ public:
     //
     // Protocols
     //
+    auto Protocols() -> std::vector<std::string>;
+
     auto AddProtocol(
         const std::string&  name,
         const py11::object& listener
@@ -109,8 +129,6 @@ public:
     auto ProtocolObject(
         const std::string& name
     ) -> std::optional<py11::object>;
-
-    auto Protocols() -> std::vector<std::string>;
 
     //
     // Payload Builder
@@ -127,10 +145,6 @@ public:
     auto Builders() -> std::vector<std::string>;
 
     //
-    // Server Api
-    //
-
-    //
     // Agent api
     //
     auto Agent(
@@ -145,6 +159,10 @@ public:
     auto AgentObject(
         const std::string& type
     ) -> std::optional<py11::object>;
+
+    //
+    // Server Api
+    //
 
     /* send request to api endpoint */
     auto ApiSend(

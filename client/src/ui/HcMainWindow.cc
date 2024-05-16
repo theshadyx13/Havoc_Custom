@@ -23,12 +23,11 @@ class Hover : public QObject
 
 public:
     bool eventFilter( QObject* watched, QEvent* event ) override {
-        handleButtonSideEvent("connection", Havoc->Gui->ButtonAgents, watched, event );
-        handleButtonSideEvent("listener", Havoc->Gui->ButtonListeners, watched, event );
-        handleButtonSideEvent("payload", Havoc->Gui->ButtonPayload, watched, event );
-        handleButtonSideEvent("hosting", Havoc->Gui->ButtonServer, watched, event );
-        handleButtonSideEvent("script", Havoc->Gui->ButtonScripts, watched, event );
-        handleButtonSideEvent("settings", Havoc->Gui->ButtonSettings, watched, event );
+        handleButtonSideEvent( "connection", Havoc->Gui->ButtonAgents,    watched, event );
+        handleButtonSideEvent( "listener",   Havoc->Gui->ButtonListeners, watched, event );
+        handleButtonSideEvent( "hosting",    Havoc->Gui->ButtonServer,    watched, event );
+        handleButtonSideEvent( "script",     Havoc->Gui->ButtonScripts,   watched, event );
+        handleButtonSideEvent( "settings",   Havoc->Gui->ButtonSettings,  watched, event );
 
         return false;
     }
@@ -69,10 +68,6 @@ HcMainWindow::HcMainWindow() {
     ButtonListeners->setObjectName( QString::fromUtf8( "SideButtonListeners" ) );
     ButtonListeners->setMinimumSize( QSize( 0, 50 ) );
 
-    ButtonPayload = new HavocButton( SideBarWidget );
-    ButtonPayload->setObjectName( QString::fromUtf8( "SideButtonPayload" ) );
-    ButtonPayload->setMinimumSize( QSize( 0, 50 ) );
-
     ButtonServer = new HavocButton( SideBarWidget );
     ButtonServer->setObjectName( QString::fromUtf8( "SideButtonServer" ) );
     ButtonServer->setMinimumSize( QSize( 0, 50 ) );
@@ -94,11 +89,10 @@ HcMainWindow::HcMainWindow() {
     gridLayout_2->addWidget( ButtonHavoc,     0, 0, 1, 1 );
     gridLayout_2->addWidget( ButtonAgents,    1, 0, 1, 1 );
     gridLayout_2->addWidget( ButtonListeners, 2, 0, 1, 1 );
-    gridLayout_2->addWidget( ButtonPayload,   3, 0, 1, 1 );
-    gridLayout_2->addWidget( ButtonServer,    4, 0, 1, 1 );
-    gridLayout_2->addWidget( ButtonScripts,   5, 0, 1, 1 );
-    gridLayout_2->addItem( Spacer, 6, 0, 1, 1 );
-    gridLayout_2->addWidget( ButtonSettings,  7, 0, 1, 1 );
+    gridLayout_2->addWidget( ButtonServer,    3, 0, 1, 1 );
+    gridLayout_2->addWidget( ButtonScripts,   4, 0, 1, 1 );
+    gridLayout_2->addItem( Spacer, 5, 0, 1, 1 );
+    gridLayout_2->addWidget( ButtonSettings,  6, 0, 1, 1 );
     gridLayout_2->setContentsMargins( 0, 0, 0, 0 );
 
     gridLayout->addWidget( SideBarWidget, 0, 0, 1, 1 );
@@ -108,7 +102,6 @@ HcMainWindow::HcMainWindow() {
     /* create page objects */
     PageAgent    = new HcPageAgent;
     PageListener = new HcPageListener;
-    PagePayload  = new HcPageBuilder;
     PageScripts  = new HcPagePlugins;
     PageServer   = new QWidget;
     PageSettings = new QWidget;
@@ -116,7 +109,6 @@ HcMainWindow::HcMainWindow() {
     /* add stacked pages to the GUI */
     StackedWidget->addWidget( PageAgent );
     StackedWidget->addWidget( PageListener );
-    StackedWidget->addWidget( PagePayload );
     StackedWidget->addWidget( PageServer );
     StackedWidget->addWidget( PageScripts );
     StackedWidget->addWidget( PageSettings );
@@ -129,10 +121,6 @@ HcMainWindow::HcMainWindow() {
 
     connect( ButtonListeners, &QPushButton::clicked, this, [&] () {
         switchPageListener();
-    } );
-
-    connect( ButtonPayload, &QPushButton::clicked, this, [&] () {
-        switchPagePayload();
     } );
 
     connect( ButtonServer, &QPushButton::clicked, this, [&] () {
@@ -156,7 +144,6 @@ HcMainWindow::HcMainWindow() {
     /* Side panel stuff */
     ButtonAgents->installEventFilter( HoverEvent );
     ButtonListeners->installEventFilter( HoverEvent );
-    ButtonPayload->installEventFilter( HoverEvent );
     ButtonServer->installEventFilter( HoverEvent );
     ButtonScripts->installEventFilter( HoverEvent );
     ButtonSettings->installEventFilter( HoverEvent );
@@ -183,11 +170,6 @@ auto HcMainWindow::unusedSideButtons() -> void {
     ButtonListeners->setIconSize( QSize( 32, 32 ) );
     ButtonListeners->setToolTip( "Listeners" );
     ButtonListeners->setUsed( false );
-
-    ButtonPayload->setIcon( Helper::GrayScaleIcon( QImage( ":/icons/32px-payload-white" ) ) );
-    ButtonPayload->setIconSize( QSize( 32, 32 ) );
-    ButtonPayload->setToolTip( "Payload" );
-    ButtonPayload->setUsed( false );
 
     ButtonServer->setIcon( Helper::GrayScaleIcon( QImage( ":/icons/32px-hosting-white" ) ) );
     ButtonServer->setIconSize( QSize( 32, 32 ) );
@@ -226,24 +208,19 @@ auto HcMainWindow::switchPageListener() -> void {
     StackedWidget->setCurrentIndex( 1 );
 }
 
-auto HcMainWindow::switchPagePayload() -> void {
-    useSideButton( ButtonPayload, "payload" );
-    StackedWidget->setCurrentIndex( 2 );
-}
-
 auto HcMainWindow::switchPageServer() -> void {
     useSideButton( ButtonServer, "hosting" );
-    StackedWidget->setCurrentIndex( 3 );
+    StackedWidget->setCurrentIndex( 2 );
 }
 
 auto HcMainWindow::switchPageScripts() -> void {
     useSideButton( ButtonScripts, "script" );
-    StackedWidget->setCurrentIndex( 4 );
+    StackedWidget->setCurrentIndex( 3 );
 }
 
 auto HcMainWindow::switchPageSettings() -> void {
     useSideButton( ButtonSettings, "settings" );
-    StackedWidget->setCurrentIndex( 5 );
+    StackedWidget->setCurrentIndex( 4 );
 }
 
 HavocButton::HavocButton(

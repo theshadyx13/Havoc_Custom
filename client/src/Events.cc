@@ -45,7 +45,6 @@ auto HavocClient::eventDispatch(
         }
 
         Gui->PageListener->Protocols.push_back( data );
-        Gui->PagePayload->RefreshBuilders();
     }
     else if ( type == Event::listener::start )
     {
@@ -99,7 +98,6 @@ auto HavocClient::eventDispatch(
         }
 
         Gui->PageListener->setListenerStatus( name, log );
-        Gui->PagePayload->RefreshBuilders();
     }
     else if ( type == Event::listener::log )
     {
@@ -139,7 +137,9 @@ auto HavocClient::eventDispatch(
     }
     else if ( type == Event::agent::add )
     {
-        Gui->PagePayload->RefreshBuilders();
+        //
+        // nothing
+        //
     }
     else if ( type == Event::agent::initialize )
     {
@@ -150,7 +150,6 @@ auto HavocClient::eventDispatch(
 
         spdlog::debug( "Agent: {}", data.dump() );
 
-        Gui->PagePayload->RefreshBuilders();
         Gui->PageAgent->addAgent( data );
     }
     else if ( type == Event::agent::callback )
@@ -158,7 +157,7 @@ auto HavocClient::eventDispatch(
         auto uuid          = std::string();
         auto typ           = std::string();
         auto arg           = json();
-        auto uid           = int();
+        auto ctx           = json();
         auto pat           = std::string();
         auto out           = std::string();
         auto callback_uuid = std::string();
@@ -271,17 +270,18 @@ auto HavocClient::eventDispatch(
                     }
 
                     //
-                    // get the task uuid to pass to the callback
+                    // get context from the callback that needs to
+                    // be passed to the callback python function
                     //
-                    if ( arg.contains( "task-uuid" ) ) {
-                        if ( arg[ "task-uuid" ].is_number() ) {
-                            uid = arg[ "task-uuid" ].get<int>();
+                    if ( arg.contains( "context" ) ) {
+                        if ( arg[ "context" ].is_object() ) {
+                            ctx = arg[ "context" ].get<json>();
                         } else {
-                            spdlog::error( "invalid agent callback: \"task-uuid\" is not a number" );
+                            spdlog::error( "invalid agent callback: \"context\" is not an object" );
                             return;
                         }
                     } else {
-                        spdlog::error( "invalid agent callback: \"task-uuid\" is not found" );
+                        spdlog::error( "invalid agent callback: \"context\" is not found" );
                         return;
                     }
 
@@ -312,26 +312,26 @@ auto HavocClient::eventDispatch(
 
                                     pat = QByteArray::fromBase64( out.c_str() ).toStdString();
 
-                                    //
-                                    // actually invoke the callback with following arguments:
-                                    //
-                                    //   def callback( agent: HcAgent, task_uuid: int, data: bytes ):
-                                    //      # agent interface can be invoked now
-                                    //      return
-                                    //
-                                    // TODO: maybe use kwargs instead ?
-                                    //       kwargs can contain multiple things like context, task-uuid, etc.
-                                    //       which i think is better and more modular since it
-                                    //
-                                    //   def callback( agent: HcAgent, data: bytes, **kwargs ):
-                                    //      # agent interface can be invoked now
-                                    //      return
-                                    //
-                                    callback.value()(
-                                        agent.value()->interface.value(),
-                                        py11::int_( uid ),
-                                        py11::bytes( pat.c_str(), pat.length() )
-                                    );
+                                    try {
+                                        //
+                                        // actually invoke the callback with following arguments:
+                                        //
+                                        //   def callback( agent: HcAgent, data: bytes, **kwargs ):
+                                        //      # agent interface can be invoked now
+                                        //      return
+                                        //
+                                        callback.value()(
+                                            agent.value()->interface.value(),
+                                            py11::bytes( pat.c_str(), pat.length() ),
+                                            **py11::dict( ctx )
+                                        );
+                                    } catch ( py11::error_already_set &eas ) {
+                                        //
+                                        // catch exception and print it to the agent
+                                        // console as it was running under its context
+                                        //
+                                        emit agent.value()->emitter.ConsoleWrite( agent.value()->uuid.c_str(), eas.what() );
+                                    }
                                 } else {
                                     spdlog::error(
                                         "[agent.has_value(): {}] [agent.value()->interface.has_value(): {}]",
@@ -398,8 +398,6 @@ auto HavocClient::eventDispatch(
             spdlog::error( "invalid agent build log: \"log\" is not found" );
             return;
         }
-
-        Gui->PagePayload->TextBuildLog->append( log.c_str() );
     } else {
         spdlog::debug( "invalid event: {} not found", type );
     }

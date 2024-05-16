@@ -1,10 +1,10 @@
 #include <Common.h>
 #include <Havoc.h>
-#include <ui/HcPageBuilder.h>
+#include <ui/HcDialogBuilder.h>
 
-HcPageBuilder::HcPageBuilder(
+HcDialogBuilder::HcDialogBuilder(
     QWidget* parent
-) : QWidget( parent ) {
+) : QDialog( parent ) {
 
     if ( objectName().isEmpty() ) {
         setObjectName( "HcPageBuilder" );
@@ -19,6 +19,7 @@ HcPageBuilder::HcPageBuilder(
 
     ComboPayload = new QComboBox( this );
     ComboPayload->setObjectName( "ComboPayload" );
+    ComboPayload->setMinimumWidth( 200 );
 
     horizontalSpacer = new QSpacerItem( 789, 20, QSizePolicy::Expanding, QSizePolicy::Minimum );
 
@@ -77,9 +78,9 @@ HcPageBuilder::HcPageBuilder(
 
     retranslateUi();
 
-    connect( ButtonGenerate,    &QPushButton::clicked, this, &HcPageBuilder::PressedGenerate    );
-    connect( ButtonSaveProfile, &QPushButton::clicked, this, &HcPageBuilder::PressedSaveProfile );
-    connect( ButtonLoadProfile, &QPushButton::clicked, this, &HcPageBuilder::PressedLoadProfile );
+    connect( ButtonGenerate,    &QPushButton::clicked, this, &HcDialogBuilder::PressedGenerate    );
+    connect( ButtonSaveProfile, &QPushButton::clicked, this, &HcDialogBuilder::PressedSaveProfile );
+    connect( ButtonLoadProfile, &QPushButton::clicked, this, &HcDialogBuilder::PressedLoadProfile );
 
     for ( auto& name : Havoc->Builders() ) {
         if ( Havoc->BuilderObject( name ).has_value() ) {
@@ -90,9 +91,11 @@ HcPageBuilder::HcPageBuilder(
     QMetaObject::connectSlotsByName( this );
 }
 
-auto HcPageBuilder::retranslateUi() -> void {
-    setWindowTitle( "PageBuilder" );
+auto HcDialogBuilder::retranslateUi() -> void {
+    setWindowTitle( "Payload Builder" );
+
     setStyleSheet( Havoc->getStyleSheet() );
+    resize( 900, 880 );
 
     ComboPayload->addItem( "(no payload available)" );
     LabelPayload->setText( "Payload:" );
@@ -100,26 +103,26 @@ auto HcPageBuilder::retranslateUi() -> void {
     ButtonSaveProfile->setText( "Save Profile" );
     ButtonLoadProfile->setText( "Load Profile" );
 
+    SplitterTopBottom->setSizes( QList<int>() << 0 );
     SplitterLeftRight->setSizes( QList<int>() << 1374 << 436 );
 }
 
-auto HcPageBuilder::AddBuilder(
+auto HcDialogBuilder::AddBuilder(
     const std::string&  name,
     const py11::object& object
 ) -> void {
-    auto gil     = py11::gil_scoped_acquire();
     auto builder = Builder {
         .name    = name,
         .widget  = new QWidget
     };
 
     builder.widget->setObjectName( "HcPageBuilder.Builder." + QString( name.c_str() ) );
+    py11::gil_scoped_acquire gil;
 
     try {
         builder.instance = object( name );
         builder.instance.attr( "_hc_main" )();
     } catch ( py11::error_already_set &eas ) {
-        py11::gil_scoped_release release;
         Helper::MessageBox(
             QMessageBox::Icon::Critical,
             "Builder loading error",
@@ -139,30 +142,13 @@ auto HcPageBuilder::AddBuilder(
     Builders.push_back( builder );
 }
 
-auto HcPageBuilder::RefreshBuilders() -> void {
-    //
-    // we don't hold the GIL
-    //
-    if ( ! PyGILState_Check() ) {
-        return;
-    }
-
+auto HcDialogBuilder::Release() -> void {
     for ( auto& builder : Builders ) {
-        try {
-            builder.instance.attr( "refresh" )();
-        } catch ( py11::error_already_set &eas ) {
-            py11::gil_scoped_release release;
-            spdlog::error( "[py11::error_already_set] failed to refresh builder \"{}\": \n{}", builder.name, eas.what() );
-            return;
-        } catch ( std::exception& e ) {
-            spdlog::error( "[std::exception] failed to refresh builder \"{}\": \n{}", builder.name, e.what() );
-        }
-
-        py11::gil_scoped_release release;
+        delete builder.widget;
     }
 }
 
-auto HcPageBuilder::PressedGenerate() -> void
+auto HcDialogBuilder::PressedGenerate() -> void
 {
     auto result = httplib::Result();
     auto data   = json();
@@ -172,6 +158,9 @@ auto HcPageBuilder::PressedGenerate() -> void
     auto found  = false;
 
     TextBuildLog->clear();
+    if ( SplitterTopBottom->sizes()[ 0 ] == 0 ) {
+        SplitterTopBottom->setSizes( QList<int>() << 400 << 200 );
+    }
 
     if ( Builders.empty() ) {
         Helper::MessageBox(
@@ -292,7 +281,6 @@ auto HcPageBuilder::PressedGenerate() -> void
                 }
             }
 
-            RefreshBuilders();
             return;
         }
     }
@@ -303,16 +291,14 @@ InvalidServerResponseError:
         "Payload build failure",
         QString( "Failed to build payload \"%1\": Invalid response from the server" ).arg( name.c_str() ).toStdString()
     );
-
-    RefreshBuilders();
 }
 
-auto HcPageBuilder::PressedSaveProfile() -> void
+auto HcDialogBuilder::PressedSaveProfile() -> void
 {
 
 }
 
-auto HcPageBuilder::PressedLoadProfile() -> void
+auto HcDialogBuilder::PressedLoadProfile() -> void
 {
 
 }
