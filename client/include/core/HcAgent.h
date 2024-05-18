@@ -15,6 +15,11 @@ signals:
         const QString& uuid,
         const QString& text
     ) -> void;
+
+    auto HeartBeat(
+        const QString& uuid,
+        const QString& time
+    ) -> void;
 };
 
 struct HcAgent {
@@ -23,6 +28,7 @@ struct HcAgent {
     json                        data;
     std::optional<py11::object> interface;
     HcAgentConsole*             console;
+    QString                     last;
 
     struct {
         QTableWidgetItem* Uuid;

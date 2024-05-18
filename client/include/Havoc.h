@@ -7,6 +7,7 @@
 /* Havoc include */
 #include <core/HcHelper.h>
 #include <core/HcEventWorker.h>
+#include <core/HcHeartbeatWorker.h>
 
 #include <ui/HcPageAgent.h>
 #include <ui/HcPageListener.h>
@@ -47,6 +48,11 @@ class HavocClient : public QWidget {
         QThread*     Thread;
         HcEventWorker* Worker;
     } Events;
+
+    struct {
+        QThread*           Thread;
+        HcHeartbeatWorker* Worker;
+    } Heartbeat;
 
     std::vector<json>         listeners  = {};
     std::vector<NamedObject>  protocols  = {};
@@ -151,6 +157,8 @@ public:
         const std::string& uuid
     ) const -> std::optional<HcAgent*>;
 
+    auto Agents() -> std::vector<HcAgent*>;
+
     auto AddAgentObject(
         const std::string&  type,
         const py11::object& object
@@ -182,6 +190,11 @@ Q_SIGNALS:
     ) -> void;
 
     auto eventClosed() -> void;
+
+    auto eventHeartbeat(
+        const QString& uuid,
+        const QString& time
+    );
 };
 
 /* a global Havoc app instance */

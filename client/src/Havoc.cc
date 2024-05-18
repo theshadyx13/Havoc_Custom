@@ -355,14 +355,29 @@ auto HavocClient::setupThreads() -> void {
     Events.Worker->moveToThread( Events.Thread );
 
     QObject::connect( Events.Thread, &QThread::started, Events.Worker, &HcEventWorker::run );
-    QObject::connect(Events.Worker, &HcEventWorker::availableEvent, this, &HavocClient::eventHandle );
-    QObject::connect(Events.Worker, &HcEventWorker::socketClosed, this, &HavocClient::eventClosed );
+    QObject::connect( Events.Worker, &HcEventWorker::availableEvent, this, &HavocClient::eventHandle );
+    QObject::connect( Events.Worker, &HcEventWorker::socketClosed, this, &HavocClient::eventClosed );
 
     //
     // fire up the even thread that is going to
     // process events and emit signals to the main gui thread
     //
     Events.Thread->start();
+
+    //
+    // start the heartbeat worker thread
+    //
+    Heartbeat.Thread = new QThread;
+    Heartbeat.Worker = new HcHeartbeatWorker;
+    Heartbeat.Worker->moveToThread( Heartbeat.Thread );
+
+    QObject::connect( Heartbeat.Thread, &QThread::started, Heartbeat.Worker, &HcHeartbeatWorker::run );
+
+    //
+    // fire up the even thread that is going to
+    // process heart beat events
+    //
+    Heartbeat.Thread->start();
 }
 
 auto HavocClient::AddBuilder(
@@ -423,6 +438,11 @@ auto HavocClient::Listeners() -> std::vector<std::string>
     }
 
     return names;
+}
+
+auto HavocClient::Agents() -> std::vector<HcAgent *>
+{
+    return Gui->PageAgent->agents;
 }
 
 auto HavocClient::Agent(

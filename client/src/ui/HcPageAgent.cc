@@ -93,9 +93,7 @@ HcPageAgent::HcPageAgent(
     horizontalSpacer = new QSpacerItem( 40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum );
     AgentActionMenu  = new QMenu( this );
 
-    ActionPayload = AgentActionMenu->addAction( "Payload Builder" );
-    ActionPayload->setCheckable( true );
-
+    ActionPayload    = AgentActionMenu->addAction( "Payload Builder" );
     ActionShowHidden = AgentActionMenu->addAction( "Show Hidden" );
     ActionShowHidden->setCheckable( true );
 
@@ -204,6 +202,7 @@ auto HcPageAgent::addAgent(
         .uuid = uuid.toStdString(),
         .type = metadata[ "type" ].get<std::string>(),
         .data = metadata,
+        .last = last,
         .ui   = {
             .Uuid        = HcTableWidget( uuid ),
             .Internal    = HcTableWidget( local ),

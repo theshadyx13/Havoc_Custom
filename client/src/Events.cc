@@ -230,7 +230,6 @@ auto HavocClient::eventDispatch(
 
             Gui->PageAgent->AgentConsole( uuid, pat, out );
         } else if ( typ == "function" ) {
-            spdlog::debug( "Event::agent::callback: function type callback -> {}", data.dump() );
             //
             // this type indicates that a callback function should be invoked
             // with the following callback uuid (inside the uuid member)
@@ -246,11 +245,11 @@ auto HavocClient::eventDispatch(
                         if ( arg[ "data" ].is_string() ) {
                             out = arg[ "data" ].get<std::string>();
                         } else {
-                            spdlog::error( "invalid agent callback: \"output\" is not string" );
+                            spdlog::error( "invalid agent callback: \"data\" is not string" );
                             return;
                         }
                     } else {
-                        spdlog::error( "invalid agent callback: \"output\" is not found" );
+                        spdlog::error( "invalid agent callback: \"data\" is not found" );
                         return;
                     }
 
@@ -354,8 +353,48 @@ auto HavocClient::eventDispatch(
                 spdlog::error( "invalid agent callback: \"data\" is not found" );
                 return;
             }
+        } else if ( typ == "heartbeat" ) {
+            if ( data.contains( "data" ) ) {
+                if ( data[ "data" ].is_object() ) {
+                    arg = data[ "data" ].get<json>();
+                } else {
+                    spdlog::error( "invalid agent heartbeat: \"data\" is not an object" );
+                    return;
+                }
+            } else {
+                spdlog::error( "invalid agent heartbeat: \"data\" is not found" );
+                return;
+            }
 
+            //
+            // get the data to pass to the callback
+            //
+            if ( arg.contains( "time" ) ) {
+                if ( arg[ "time" ].is_string() ) {
+                    out = arg[ "time" ].get<std::string>();
+                } else {
+                    spdlog::error( "invalid agent heartbeat: \"time\" is not string" );
+                    return;
+                }
+            } else {
+                spdlog::error( "invalid agent heartbeat: \"time\" is not found" );
+                return;
+            }
 
+            //
+            // set the last callback of the agent
+            //
+            if ( auto agent = Agent( uuid ) ) {
+                if ( agent.has_value() ) {
+                    agent.value()->last = QString( out.c_str() );
+                } else {
+                    spdlog::error( "invalid agent heartbeat: \"uuid\" agent does not have any value" );
+                }
+            } else {
+                spdlog::error( "invalid agent heartbeat: \"uuid\" agent not found" );
+            }
+        } else {
+            spdlog::error( "invalid agent typ: {}", typ );
         }
     }
     else if ( type == Event::agent::console )
