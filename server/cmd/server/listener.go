@@ -38,6 +38,16 @@ func (t *Teamserver) ListenerRegister(name string, listener map[string]any) erro
 	return nil
 }
 
+func (t *Teamserver) ListenerProtocol(name string) (string, error) {
+	for _, p := range t.listener {
+		if p.Name == name {
+			return p.Data["protocol"].(string), nil
+		}
+	}
+
+	return "", errors.New("listener protocol not found")
+}
+
 func (t *Teamserver) ListenerExists(name string) bool {
 	for _, listener := range t.listener {
 		if listener.Name == name {
@@ -75,9 +85,7 @@ func (t *Teamserver) ListenerStart(name, protocol string, options map[string]any
 	)
 
 	for _, prot := range t.protocols {
-
 		if val, ok := prot.Data["protocol"]; ok {
-
 			if val.(string) == protocol {
 
 				if t.ListenerExists(name) {
@@ -141,6 +149,21 @@ func (t *Teamserver) ListenerEvent(protocol string, event map[string]any) (map[s
 				break
 			}
 		}
+	}
+
+	return resp, err
+}
+
+func (t *Teamserver) ListenerConfig(name string) (map[string]any, error) {
+	var (
+		err  error
+		resp map[string]any
+	)
+
+	err = errors.New("protocol not found")
+
+	if resp, err = t.plugins.ListenerConfig(name); err != nil {
+		return nil, err
 	}
 
 	return resp, err

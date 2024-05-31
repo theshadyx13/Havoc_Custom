@@ -540,35 +540,36 @@ class HcListenerHttp( pyhavoc.ui.HcListenerView ):
     ##
     def save( self ) -> dict:
         return {
-            "Options": {
-                "Host Bind"    : self.opt_combo_hostbind.currentText(),
-                "Port"         : self.opt_input_port.text(),
-                "Hosts"        : self.opt_list_hosts.list(),
-                "HostRotation" : self.opt_combo_rotation.currentText(),
-                "User Agent"   : self.opt_input_useragent.text(),
-                "Secure"       : self.opt_combo_secure.currentText(),
-                "Server Cert"  : self.opt_file_server_cert.file(),
-                "Server Key"   : self.opt_file_server_key.file(),
+            "options": {
+                "host bind"    : self.opt_combo_hostbind.currentText(),
+                "port"         : self.opt_input_port.text(),
+                "hosts"        : self.opt_list_hosts.list(),
+                "uris"         : self.opt_list_uris.list(),
+                "host rotation": self.opt_combo_rotation.currentText(),
+                "user agent"   : self.opt_input_useragent.text(),
+                "secure"       : self.opt_combo_secure.currentText() == "true" if True else False,
+                "server cert"  : self.opt_file_server_cert.file(),
+                "server key"   : self.opt_file_server_key.file(),
             },
 
-            "Proxy": {
-                "Enabled": self.pxy_combo_enable.currentText(),
-                "Type"   : self.pxy_combo_type.currentText(),
-                "Host"   : self.pxy_input_host.text(),
-                "Port"   : self.pxy_input_port.text(),
-                "User"   : self.pxy_input_user.text(),
-                "Pass"   : self.pxy_input_pass.text(),
+            "proxy": {
+                "enabled": self.pxy_combo_enable.currentText() == "true" if True else False,
+                "type"   : self.pxy_combo_type.currentText(),
+                "host"   : self.pxy_input_host.text(),
+                "port"   : self.pxy_input_port.text(),
+                "user"   : self.pxy_input_user.text(),
+                "pass"   : self.pxy_input_pass.text(),
             },
 
-            "Response": {
-                "Headers": self.srv_list_headers.list(),
-                "Prepend": self.srv_text_prepend.toPlainText(),
-                "Append" : self.srv_text_prepend.toPlainText(),
+            "response": {
+                "headers": self.srv_list_headers.list(),
+                "prepend": self.srv_text_prepend.toPlainText(),
+                "append" : self.srv_text_prepend.toPlainText(),
             },
 
-            "Request": {
-                "Headers": self.cli_list_headers.list(),
-                "Prepend": self.cli_text_prepend.toPlainText(),
-                "Append" : self.cli_text_prepend.toPlainText(),
+            "request": {
+                "headers": self.cli_list_headers.list(),
+                "prepend": self.cli_text_prepend.toPlainText(),
+                "append" : self.cli_text_prepend.toPlainText(),
             }
         }

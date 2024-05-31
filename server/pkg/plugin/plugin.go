@@ -34,6 +34,7 @@ type HavocInterface interface {
 	Version() map[string]string
 
 	ListenerRegister(name string, listener map[string]any) error
+	ListenerProtocol(name string) (string, error)
 
 	AgentRegister(name string, agent map[string]any) error
 }
@@ -48,11 +49,12 @@ type ListenerInterface interface {
 	ListenerEdit(config map[string]any) (map[string]any, error)
 	ListenerStop(name string) error
 	ListenerEvent(event map[string]any) (map[string]any, error)
+	ListenerConfig(name string) (map[string]any, error)
 }
 
 type AgentInterface interface {
 	AgentRegister() map[string]any
-	AgentGenerate(ctx map[string]any, config map[string]any) (string, []byte, error)
+	AgentGenerate(ctx map[string]any, config map[string]any) (string, []byte, map[string]any, error)
 	AgentExecute(uuid string, data map[string]any, wait bool) (map[string]any, error)
 	AgentProcess(ctx map[string]any, request []byte) ([]byte, error)
 }
@@ -263,6 +265,11 @@ func (s *PluginSystem) CheckAndInsertInterface(extension *Plugin, inter any) err
 		// sanity check if the method exist
 		if _, ok = reflection.MethodByName("ListenerEvent"); !ok {
 			return fmt.Errorf("ListenerEvent not found")
+		}
+
+		// sanity check if the method exist
+		if _, ok = reflection.MethodByName("ListenerConfig"); !ok {
+			return fmt.Errorf("ListenerConfig not found")
 		}
 
 		// cast the interface

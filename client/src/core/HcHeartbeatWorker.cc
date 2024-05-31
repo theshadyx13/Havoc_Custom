@@ -13,9 +13,9 @@ void HcHeartbeatWorker::run() {
     QObject::connect( HeartbeatTimer, &QTimer::timeout, this, &HcHeartbeatWorker::updateHeartbeats );
 
     //
-    // execute the updater every 800 milliseconds
+    // execute the updater every 500 milliseconds
     //
-    HeartbeatTimer->start( 800 );
+    HeartbeatTimer->start( 500 );
 }
 
 /*!
@@ -31,6 +31,12 @@ auto HcHeartbeatWorker::updateHeartbeats() -> void
     // iterate over registered agents
     //
     for ( auto& agent : Havoc->Agents() ) {
+        //
+        // TODO/FIX: if the teamserver and client are on two diff
+        //           timezones the heartbeat is going to look weird
+        //           and incorrect.
+        //
+
         //
         // parse the last called time, calculate the difference,
         // and get seconds, minutes, hours and days from it

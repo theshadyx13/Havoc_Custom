@@ -27,6 +27,8 @@ public:
 
 class HcMainWindow : public QMainWindow
 {
+    Q_OBJECT
+
 public:
     QWidget*            MainWidget      = nullptr;
     QGridLayout*        gridLayout      = nullptr;
@@ -42,7 +44,6 @@ public:
     QStackedWidget*     StackedWidget   = nullptr;
     HcPageAgent*        PageAgent       = nullptr;
     HcPageListener*     PageListener    = nullptr;
-    // HcPageBuilder*      PagePayload     = nullptr;
     QWidget*            PageServer      = nullptr;
     HcPagePlugins*      PageScripts     = nullptr;
     QWidget*            PageSettings    = nullptr;
@@ -62,6 +63,11 @@ public:
     auto switchPageServer() -> void;
     auto switchPageScripts() -> void;
     auto switchPageSettings() -> void;
+
+signals:
+    auto signalBuildLog(
+        const QString& text
+    ) -> void;
 };
 
 QT_END_NAMESPACE

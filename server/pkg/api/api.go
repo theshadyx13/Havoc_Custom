@@ -37,7 +37,7 @@ type teamserver interface {
 	ListenerStart(name, protocol string, options map[string]any) error
 	ListenerEvent(protocol string, event map[string]any) (map[string]any, error)
 
-	AgentGenerate(ctx map[string]any, config map[string]any) (string, []byte, error)
+	AgentGenerate(ctx map[string]any, config map[string]any) (string, []byte, map[string]any, error)
 	AgentExecute(uuid string, data map[string]any, wait bool) (map[string]any, error)
 }
 

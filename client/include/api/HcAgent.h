@@ -14,6 +14,16 @@ auto HcAgentConsoleWrite(
     const std::string& content
 ) -> void;
 
+auto HcAgentConsoleLabel(
+    const std::string& uuid,
+    const std::string& content
+) -> void;
+
+auto HcAgentConsoleHeader(
+    const std::string& uuid,
+    const std::string& header
+) -> void;
+
 auto HcAgentRegisterCallback(
     const std::string&  uuid,
     const py11::object& callback

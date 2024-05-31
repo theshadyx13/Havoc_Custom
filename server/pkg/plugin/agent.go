@@ -2,11 +2,12 @@ package plugin
 
 import "errors"
 
-func (s *PluginSystem) AgentGenerate(ctx map[string]any, config map[string]any) (string, []byte, error) {
+func (s *PluginSystem) AgentGenerate(ctx map[string]any, config map[string]any) (string, []byte, map[string]any, error) {
 	var (
 		err  error
 		ext  *Plugin
 		bin  []byte
+		cfg  map[string]any
 		name string
 	)
 
@@ -20,14 +21,14 @@ func (s *PluginSystem) AgentGenerate(ctx map[string]any, config map[string]any) 
 		}
 
 		if ctx["name"] == ext.AgentRegister()["name"] {
-			name, bin, err = ext.AgentGenerate(ctx, config)
+			name, bin, cfg, err = ext.AgentGenerate(ctx, config)
 			return false
 		}
 
 		return true
 	})
 
-	return name, bin, err
+	return name, bin, cfg, err
 }
 
 func (s *PluginSystem) AgentExecute(atype, uuid string, data map[string]any, wait bool) (map[string]any, error) {

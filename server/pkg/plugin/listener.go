@@ -55,3 +55,35 @@ func (s *PluginSystem) ListenerEvent(protocol string, event map[string]any) (map
 
 	return resp, err
 }
+
+func (s *PluginSystem) ListenerConfig(name string) (map[string]any, error) {
+	var (
+		data     map[string]any
+		err      error
+		ext      *Plugin
+		protocol string
+	)
+
+	if protocol, err = s.havoc.ListenerProtocol(name); err != nil {
+		return nil, err
+	}
+
+	err = errors.New("protocol not found")
+
+	s.loaded.Range(func(key, value any) bool {
+		ext = value.(*Plugin)
+
+		if ext.Type != PluginTypeListener {
+			return true
+		}
+
+		if protocol == ext.ListenerRegister()["protocol"].(string) {
+			data, err = ext.ListenerConfig(name)
+			return false
+		}
+
+		return true
+	})
+
+	return data, err
+}

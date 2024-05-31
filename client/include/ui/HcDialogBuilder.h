@@ -53,10 +53,21 @@ public:
 
     auto Release() -> void;
 
+private:
+    auto BuilderObject(
+        const std::string& name
+    ) -> std::optional<py11::object>;
+
 private slots:
     auto PressedGenerate() -> void;
     auto PressedSaveProfile() -> void;
     auto PressedLoadProfile() -> void;
+
+Q_SIGNALS:
+    auto EventBuildLog(
+        const QString& log
+    ) -> void;
+
 };
 
 QT_END_NAMESPACE

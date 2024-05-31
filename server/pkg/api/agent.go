@@ -17,6 +17,7 @@ func (api *ServerApi) agentBuild(ctx *gin.Context) {
 		context  map[string]any
 		config   map[string]any
 		agent    map[string]any
+		cfg      map[string]any
 		name     string
 		username string
 		ok       bool
@@ -84,7 +85,7 @@ func (api *ServerApi) agentBuild(ctx *gin.Context) {
 	//
 	// interact with the plugin to generate a payload
 	//
-	name, body, err = api.teamserver.AgentGenerate(context, config)
+	name, body, cfg, err = api.teamserver.AgentGenerate(context, config)
 	if err != nil {
 		logger.DebugError("Failed to generate agent payload: %v", err)
 		goto ERROR
@@ -96,6 +97,7 @@ func (api *ServerApi) agentBuild(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{
 		"payload":  base64.StdEncoding.EncodeToString(body),
 		"filename": name,
+		"context":  cfg,
 	})
 
 	return

@@ -235,22 +235,6 @@ auto HcPageAgent::addAgent(
         }
     } );
 
-    //
-    // if an interface has been registered then assign it to the agent
-    //
-    agent->interface = std::nullopt;
-    if ( auto interface = Havoc->AgentObject( agent->type ) ) {
-        if ( interface.has_value() ) {
-            py11::gil_scoped_acquire gil;
-
-            try {
-                agent->interface = interface.value()( agent->uuid, agent->type, metadata[ "meta" ] );
-            } catch ( py11::error_already_set &eas ) {
-                spdlog::error( "failed to invoke agent interface [uuid: {}] [type: {}]: {}", agent->uuid, agent->type, eas.what() );
-            }
-        }
-    }
-
     agents.push_back( agent );
 
     AgentTable->setRowCount( row + 1 );
@@ -267,6 +251,22 @@ auto HcPageAgent::addAgent(
     AgentTable->setItem( row, 9,  agent->ui.Last        );
     AgentTable->setItem( row, 10, agent->ui.Note        );
     AgentTable->setSortingEnabled( sort );
+
+    //
+    // if an interface has been registered then assign it to the agent
+    //
+    agent->interface = std::nullopt;
+    if ( auto interface = Havoc->AgentObject( agent->type ) ) {
+        if ( interface.has_value() ) {
+            py11::gil_scoped_acquire gil;
+
+            try {
+                agent->interface = interface.value()( agent->uuid, agent->type, metadata[ "meta" ] );
+            } catch ( py11::error_already_set &eas ) {
+                spdlog::error( "failed to invoke agent interface [uuid: {}] [type: {}]: {}", agent->uuid, agent->type, eas.what() );
+            }
+        }
+    }
 
     AgentDisplayerTargets->setText( QString( "Targets: %1" ).arg( agents.size() ) ); /* TODO: all targets (only show one host) */
     AgentDisplayerSessions->setText( QString( "Sessions: %1" ).arg( agents.size() ) ); /* TODO: only set current alive beacons/sessions */
@@ -390,6 +390,8 @@ auto HcPageAgent::actionPayloadBuilder(
     bool checked
 ) -> void {
     auto dialog = new HcDialogBuilder;
+
+    QObject::connect( Havoc->Gui, &HcMainWindow::signalBuildLog, dialog, &HcDialogBuilder::EventBuildLog );
 
     dialog->exec();
     dialog->Release();

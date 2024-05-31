@@ -89,7 +89,7 @@ set( HAVOC_SRC
 
         src/ui/HcPageAgent.cc
         src/ui/HcPageListener.cc
-        src/ui/HcPageBuilder.cc
+        src/ui/HcDialogBuilder.cc
         src/ui/HcPageScript.cc
 
         src/ui/HcWidget.cc

@@ -45,14 +45,14 @@ func (t *Teamserver) AgentProcess(ctx map[string]any, request []byte) ([]byte, e
 	return nil, errors.New("agent to process request not found")
 }
 
-func (t *Teamserver) AgentGenerate(ctx map[string]any, config map[string]any) (string, []byte, error) {
+func (t *Teamserver) AgentGenerate(ctx map[string]any, config map[string]any) (string, []byte, map[string]any, error) {
 	for _, agent := range t.payloads {
 		if agent.Data["name"].(string) == ctx["name"].(string) {
 			return t.plugins.AgentGenerate(ctx, config)
 		}
 	}
 
-	return "", nil, errors.New("agent to generate not found")
+	return "", nil, nil, errors.New("agent to generate not found")
 }
 
 func (t *Teamserver) AgentExecute(uuid string, data map[string]any, wait bool) (map[string]any, error) {

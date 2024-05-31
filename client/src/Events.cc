@@ -307,8 +307,6 @@ auto HavocClient::eventDispatch(
                                 // it contains a python interface
                                 //
                                 if ( agent.has_value() && agent.value()->interface.has_value() ) {
-                                    spdlog::debug( "agent found and invoking callback: {}", agent.value()->uuid );
-
                                     pat = QByteArray::fromBase64( out.c_str() ).toStdString();
 
                                     try {
@@ -429,6 +427,11 @@ auto HavocClient::eventDispatch(
         if ( data.contains( "log" ) ) {
             if ( data[ "log" ].is_string() ) {
                 log = data[ "log" ].get<std::string>();
+
+                //
+                // signal opened dialog of the build message
+                //
+                emit Gui->signalBuildLog( log.c_str() );
             } else {
                 spdlog::error( "invalid agent build log: \"log\" is not string" );
                 return;

@@ -5,7 +5,6 @@
 
 namespace Event {
 
-    /* user events */
     namespace user {
         static std::string login   = "user::login";
         static std::string logout  = "user::logout";

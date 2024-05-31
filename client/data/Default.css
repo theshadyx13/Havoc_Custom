@@ -189,7 +189,7 @@ QTextEdit[HcConsole="true"] {
     color: #f8f8f2;
 }
 
-QScrollArea {
+QLayout {
     background-color: #282A36;
     color: #f8f8f2;
 }
@@ -236,6 +236,11 @@ QPushButton[HcButtonUsed="true"] {
 QPushButton[HcButtonUsed="false"] {
     border: 0 solid #282a36;
     border-left-width: 2px;
+}
+
+QPushButton {
+    color: #f8f8f2;
+    background-color: #44475a;
 }
 
 QToolButton, QPushButton[HcButton="true"] {

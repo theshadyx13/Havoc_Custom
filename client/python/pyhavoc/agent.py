@@ -16,6 +16,12 @@ def HcAgentExport( interface ):
 
     return interface
 
+def HcAgentConsoleHeader( uuid: str, header: str ):
+    agent.HcAgentConsoleHeader( uuid, header )
+
+def HcAgentConsoleLabel( uuid: str, content: str ):
+    agent.HcAgentConsoleLabel( uuid, content )
+
 def HcAgentRegisterCallback( uuid, callback ):
     agent.HcAgentRegisterCallback( uuid, callback )
 
@@ -66,6 +72,14 @@ class HcAgent:
         """
 
         return agent.HcAgentExecute( self.agent_uuid(), data, wait_to_finish )
+
+    def console_label( self, text: str ):
+        agent.HcAgentConsoleLabel( self.agent_uuid(), text )
+        return
+
+    def console_header( self, text: str ):
+        agent.HcAgentConsoleHeader( self.agent_uuid(), text )
+        return
 
     ##
     ## prints the given text to the console

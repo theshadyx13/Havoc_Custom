@@ -21,6 +21,57 @@ auto HcAgentRegisterInterface(
 /*!
  * @brief
  *  writes content to specified agent console
+ *  bottom label
+ *
+ * @param uuid
+ *  uuid of the agent
+ *
+ * @param content
+ *  content to set as the label of the console
+ */
+auto HcAgentConsoleLabel(
+    const std::string& uuid,
+    const std::string& content
+) -> void {
+    auto agent = Havoc->Agent( uuid );
+
+    if ( agent.has_value() ) {
+        //
+        // if we are going to append nothing then hide the label
+        //
+        agent.value()->console->setBottomLabel( content.c_str() );
+        agent.value()->console->LabelBottom->setFixedHeight( content.empty() ? 0 : 20 );
+    }
+}
+
+/*!
+ * @brief
+ *  writes content to specified agent console header
+ *
+ * @param uuid
+ *  uuid of the agent
+ *
+ * @param content
+ *  content to set as the header of the console
+ */
+auto HcAgentConsoleHeader(
+    const std::string& uuid,
+    const std::string& content
+) -> void {
+    auto agent = Havoc->Agent( uuid );
+
+    if ( agent.has_value() ) {
+        //
+        // if we are going to append nothing then hide the label
+        //
+        agent.value()->console->setHeaderLabel( content.c_str() );
+        agent.value()->console->LabelHeader->setFixedHeight( content.empty() ? 0 : 20 );
+    }
+}
+
+/*!
+ * @brief
+ *  writes content to specified agent console
  *
  * @param uuid
  *  uuid of the agent

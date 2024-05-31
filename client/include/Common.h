@@ -6,6 +6,7 @@
 
 /* std libraries */
 #include <memory>
+#include <format>
 
 /* external libs */
 #include <toml.hpp>

@@ -4,6 +4,8 @@
 #include <Common.h>
 #include <Events.h>
 
+class HcMainWindow;
+
 /* Havoc include */
 #include <core/HcHelper.h>
 #include <core/HcEventWorker.h>
@@ -26,12 +28,15 @@
 #define HAVOC_CODENAME "King Of The Damned"
 
 class HavocClient : public QWidget {
+
     struct NamedObject {
         std::string  name;
         py11::object object;
     };
 
-    /* current connection info */
+    //
+    // current connection info
+    //
     struct {
         std::string Name;
         std::string Host;
@@ -39,8 +44,10 @@ class HavocClient : public QWidget {
         std::string User;
         std::string Pass;
 
-        /* login token to interact
-         * with the api endpoints */
+        //
+        // login token to interact
+        // with the api endpoints
+        //
         std::string Token;
     } Profile;
 
@@ -190,11 +197,6 @@ Q_SIGNALS:
     ) -> void;
 
     auto eventClosed() -> void;
-
-    auto eventHeartbeat(
-        const QString& uuid,
-        const QString& time
-    );
 };
 
 /* a global Havoc app instance */

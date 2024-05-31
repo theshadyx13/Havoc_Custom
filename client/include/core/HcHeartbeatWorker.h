@@ -23,6 +23,7 @@ public:
     /* run event thread */
     void run();
 
+private:
     auto updateHeartbeats() -> void;
 };
 

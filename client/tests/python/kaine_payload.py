@@ -1,5 +1,6 @@
 import uuid
 
+import hexdump
 import pyhavoc
 
 import PySide6
@@ -16,394 +17,18 @@ import string
 
 from os.path import exists
 from struct import pack, unpack, calcsize
+from Crypto.Cipher import ARC4
+from Crypto.Random import get_random_bytes
 
 KAINE_COMMANDS: list = []
 
-@pyhavoc.ui.HcUiBuilderRegisterView( "Kaine" )
-class HcKaineBuilder( pyhavoc.ui.HcPayloadView ):
-
-    def __init__( self, *args, **kwargs ):
-        super().__init__( *args, **kwargs )
-
-    ##
-    ## main function to be executed
-    ## should create the widgets inputs
-    ## for the payload builder
-    ##
-    def main( self, widget: PySide6.QtWidgets.QWidget ):
-
-        self.gridLayout = QGridLayout( widget )
-        self.gridLayout.setObjectName(u"gridLayout")
-        self.gridLayout.setContentsMargins( 0, 0, 0, 0 )
-
-        self.ScrollAreaStack = QScrollArea( widget )
-        self.ScrollAreaStack.setObjectName(u"ScrollAreaStack")
-        self.ScrollAreaStack.setWidgetResizable(True)
-
-        self.ScrollAreaWidget = QWidget()
-        self.ScrollAreaWidget.setObjectName(u"ScrollAreaWidget")
-        self.ScrollAreaWidget.setProperty( "HcWidgetDark", "true" )
-
-        self.gridLayout_5 = QGridLayout(self.ScrollAreaWidget)
-        self.gridLayout_5.setObjectName(u"gridLayout_5")
-
-        self.GridLayoutHeader = QGridLayout()
-        self.GridLayoutHeader.setObjectName(u"GridLayoutHeader")
-        self.GridLayoutHeader.setSizeConstraint(QLayout.SetDefaultConstraint)
-
-        self.ComboListener = QComboBox(self.ScrollAreaWidget)
-        self.ComboListener.setObjectName(u"ComboListener")
-
-        self.GridLayoutHeader.addWidget(self.ComboListener, 0, 1, 1, 1)
-
-        self.LabelArch = QLabel(self.ScrollAreaWidget)
-        self.LabelArch.setObjectName(u"LabelArch")
-
-        self.GridLayoutHeader.addWidget(self.LabelArch, 1, 0, 1, 1)
-
-        self.ComboArch = QComboBox(self.ScrollAreaWidget)
-        self.ComboArch.setObjectName(u"ComboArch")
-
-        self.GridLayoutHeader.addWidget(self.ComboArch, 1, 1, 1, 1)
-
-        self.LabelListener = QLabel(self.ScrollAreaWidget)
-        self.LabelListener.setObjectName(u"LabelListener")
-
-        self.GridLayoutHeader.addWidget(self.LabelListener, 0, 0, 1, 1)
-
-        self.LabelFormat = QLabel(self.ScrollAreaWidget)
-        self.LabelFormat.setObjectName(u"LabelFormat")
-
-        self.GridLayoutHeader.addWidget(self.LabelFormat, 2, 0, 1, 1)
-
-        self.ComboFormat = QComboBox(self.ScrollAreaWidget)
-        self.ComboFormat.setObjectName(u"ComboFormat")
-
-        self.GridLayoutHeader.addWidget(self.ComboFormat, 2, 1, 1, 1)
-
-        self.GridLayoutHeader.setColumnStretch(1, 1)
-
-        self.gridLayout_5.addLayout(self.GridLayoutHeader, 0, 0, 1, 2)
-
-        self.GroupCoreSettings = QGroupBox(self.ScrollAreaWidget)
-        self.GroupCoreSettings.setObjectName(u"GroupCoreSettings")
-        self.gridLayout_3 = QGridLayout(self.GroupCoreSettings)
-        self.gridLayout_3.setObjectName(u"gridLayout_3")
-        self.LabelKillDate = QLabel(self.GroupCoreSettings)
-        self.LabelKillDate.setObjectName(u"LabelKillDate")
-
-        self.gridLayout_3.addWidget(self.LabelKillDate, 0, 0, 1, 1)
-
-        self.LabelStackSpoofing = QLabel(self.GroupCoreSettings)
-        self.LabelStackSpoofing.setObjectName(u"LabelStackSpoofing")
-
-        self.gridLayout_3.addWidget(self.LabelStackSpoofing, 3, 0, 1, 1)
-
-        self.GroupSleepObf = QGroupBox(self.GroupCoreSettings)
-        self.GroupSleepObf.setObjectName(u"GroupSleepObf")
-        self.gridLayout_7 = QGridLayout(self.GroupSleepObf)
-        self.gridLayout_7.setObjectName(u"gridLayout_7")
-        self.GridLayoutSleepObf = QGridLayout()
-        self.GridLayoutSleepObf.setObjectName(u"GridLayoutSleepObf")
-        self.LabelSleepObfJmpGadget = QLabel(self.GroupSleepObf)
-        self.LabelSleepObfJmpGadget.setObjectName(u"LabelSleepObfJmpGadget")
-
-        self.GridLayoutSleepObf.addWidget(self.LabelSleepObfJmpGadget, 1, 0, 1, 1)
-
-        self.LabelEncryption = QLabel(self.GroupSleepObf)
-        self.LabelEncryption.setObjectName(u"LabelEncryption")
-
-        self.GridLayoutSleepObf.addWidget(self.LabelEncryption, 2, 0, 1, 1)
-
-        self.LabelSleepObfTechnique = QLabel(self.GroupSleepObf)
-        self.LabelSleepObfTechnique.setObjectName(u"LabelSleepObfTechnique")
-
-        self.GridLayoutSleepObf.addWidget(self.LabelSleepObfTechnique, 0, 0, 1, 1)
-
-        self.CheckHeapEncryption = QCheckBox(self.GroupSleepObf)
-        self.CheckHeapEncryption.setObjectName(u"CheckHeapEncryption")
-
-        self.GridLayoutSleepObf.addWidget(self.CheckHeapEncryption, 4, 0, 1, 3)
-
-        self.CheckStackDuplication = QCheckBox(self.GroupSleepObf)
-        self.CheckStackDuplication.setObjectName(u"CheckStackDuplication")
-
-        self.GridLayoutSleepObf.addWidget(self.CheckStackDuplication, 3, 0, 1, 3)
-
-        self.ComboEncryption = QComboBox(self.GroupSleepObf)
-        self.ComboEncryption.setObjectName(u"ComboEncryption")
-
-        self.GridLayoutSleepObf.addWidget(self.ComboEncryption, 2, 1, 1, 2)
-
-        self.ComboSleepObfJmpGadget = QComboBox(self.GroupSleepObf)
-        self.ComboSleepObfJmpGadget.setObjectName(u"ComboSleepObfJmpGadget")
-
-        self.GridLayoutSleepObf.addWidget(self.ComboSleepObfJmpGadget, 1, 1, 1, 2)
-
-        self.ComboSleepObfTechnique = QComboBox(self.GroupSleepObf)
-        self.ComboSleepObfTechnique.setObjectName(u"ComboSleepObfTechnique")
-
-        self.GridLayoutSleepObf.addWidget(self.ComboSleepObfTechnique, 0, 1, 1, 2)
-
-        self.GridLayoutSleepObf.setColumnStretch(1, 1)
-
-        self.gridLayout_7.addLayout(self.GridLayoutSleepObf, 0, 0, 1, 1)
-
-        self.VSpacerSleepObf = QSpacerItem(0, 3, QSizePolicy.Minimum, QSizePolicy.Expanding)
-
-        self.gridLayout_7.addItem(self.VSpacerSleepObf, 1, 0, 1, 1)
-
-
-        self.gridLayout_3.addWidget(self.GroupSleepObf, 9, 0, 1, 3)
-
-        self.InputModuleStomp = QLineEdit(self.GroupCoreSettings)
-        self.InputModuleStomp.setObjectName(u"InputModuleStomp")
-
-        self.gridLayout_3.addWidget(self.InputModuleStomp, 6, 1, 1, 2)
-
-        self.InputSleep = QLineEdit(self.GroupCoreSettings)
-        self.InputSleep.setObjectName(u"InputSleep")
-        self.InputSleep.setValidator( QIntValidator() )
-
-        self.gridLayout_3.addWidget(self.InputSleep, 1, 1, 1, 2)
-
-        self.CheckKillDate = QCheckBox(self.GroupCoreSettings)
-        self.CheckKillDate.setObjectName(u"CheckKillDate")
-
-        self.gridLayout_3.addWidget(self.CheckKillDate, 0, 2, 1, 1)
-
-        self.LabelAntiShellcode = QLabel(self.GroupCoreSettings)
-        self.LabelAntiShellcode.setObjectName(u"LabelAntiShellcode")
-
-        self.gridLayout_3.addWidget(self.LabelAntiShellcode, 4, 0, 1, 1)
-
-        self.ComboAntiShellcode = QComboBox(self.GroupCoreSettings)
-        self.ComboAntiShellcode.setObjectName(u"ComboAntiShellcode")
-
-        self.gridLayout_3.addWidget(self.ComboAntiShellcode, 4, 1, 1, 2)
-
-        self.LabelModuleLoad = QLabel(self.GroupCoreSettings)
-        self.LabelModuleLoad.setObjectName(u"LabelModuleLoad")
-
-        self.gridLayout_3.addWidget(self.LabelModuleLoad, 5, 0, 1, 1)
-
-        self.InputJitter = QLineEdit(self.GroupCoreSettings)
-        self.InputJitter.setObjectName(u"InputJitter")
-        self.InputJitter.setValidator( QIntValidator( 0, 100 ) )
-
-        self.gridLayout_3.addWidget(self.InputJitter, 2, 1, 1, 2)
-
-        self.CheckModuleRndOrder = QCheckBox(self.GroupCoreSettings)
-        self.CheckModuleRndOrder.setObjectName(u"CheckModuleRndOrder")
-
-        self.gridLayout_3.addWidget(self.CheckModuleRndOrder, 8, 0, 1, 3)
-
-        self.LabelModuleStomp = QLabel(self.GroupCoreSettings)
-        self.LabelModuleStomp.setObjectName(u"LabelModuleStomp")
-
-        self.gridLayout_3.addWidget(self.LabelModuleStomp, 6, 0, 1, 1)
-
-        self.DateTimeKillDate = QDateTimeEdit( self.GroupCoreSettings )
-        self.DateTimeKillDate.setObjectName( u"DateTimeKillDate" )
-        self.DateTimeKillDate.setTimeSpec( PySide6.QtCore.Qt.TimeSpec.LocalTime )
-        self.DateTimeKillDate.setCalendarPopup( True )
-        self.DateTimeKillDate.setDateTime( PySide6.QtCore.QDateTime.currentDateTime() )
-        self.DateTimeKillDate.setDisplayFormat("dd-MMM-yyyy hh:mm:00")
-
-        self.gridLayout_3.addWidget(self.DateTimeKillDate, 0, 1, 1, 1)
-
-        self.LabelSleep = QLabel(self.GroupCoreSettings)
-        self.LabelSleep.setObjectName(u"LabelSleep")
-
-        self.gridLayout_3.addWidget(self.LabelSleep, 1, 0, 1, 1)
-
-        self.ComboStackSpoofing = QComboBox(self.GroupCoreSettings)
-        self.ComboStackSpoofing.setObjectName(u"ComboStackSpoofing")
-
-        self.gridLayout_3.addWidget(self.ComboStackSpoofing, 3, 1, 1, 2)
-
-        self.ComboModuleLoad = QComboBox(self.GroupCoreSettings)
-        self.ComboModuleLoad.setObjectName(u"ComboModuleLoad")
-
-        self.gridLayout_3.addWidget(self.ComboModuleLoad, 5, 1, 1, 2)
-
-        self.LabelJitter = QLabel(self.GroupCoreSettings)
-        self.LabelJitter.setObjectName(u"LabelJitter")
-
-        self.gridLayout_3.addWidget(self.LabelJitter, 2, 0, 1, 1)
-
-        self.CheckIndirectSyscall = QCheckBox(self.GroupCoreSettings)
-        self.CheckIndirectSyscall.setObjectName(u"CheckIndirectSyscall")
-
-        self.gridLayout_3.addWidget(self.CheckIndirectSyscall, 7, 0, 1, 1)
-
-        self.InputIndirectSyscall = QLineEdit(self.GroupCoreSettings)
-        self.InputIndirectSyscall.setObjectName(u"InputIndirectSyscall")
-
-        self.gridLayout_3.addWidget(self.InputIndirectSyscall, 7, 1, 1, 2)
-
-        self.gridLayout_5.addWidget(self.GroupCoreSettings, 1, 0, 1, 2)
-
-        self.ScrollAreaStack.setWidget(self.ScrollAreaWidget)
-
-        self.gridLayout.addWidget(self.ScrollAreaStack, 0, 0, 1, 1)
-
-        self.LabelArch.setText(QCoreApplication.translate("KaineBuilder", u"Arch: ", None))
-        self.LabelListener.setText(QCoreApplication.translate("KaineBuilder", u"Listener: ", None))
-        self.LabelFormat.setText(QCoreApplication.translate("KaineBuilder", u"Format: ", None))
-        self.GroupCoreSettings.setTitle(QCoreApplication.translate("KaineBuilder", u"Core Settings", None))
-        self.LabelKillDate.setText(QCoreApplication.translate("KaineBuilder", u"Kill Date: ", None))
-        self.LabelStackSpoofing.setText(QCoreApplication.translate("KaineBuilder", u"Stack Spoofing: ", None))
-        self.GroupSleepObf.setTitle(QCoreApplication.translate("KaineBuilder", u"Sleep Obfuscation", None))
-        self.LabelSleepObfJmpGadget.setText(QCoreApplication.translate("KaineBuilder", u"Jmp Gadget: ", None))
-        self.LabelEncryption.setText(QCoreApplication.translate("KaineBuilder", u"Encryption:", None))
-        self.LabelSleepObfTechnique.setText(QCoreApplication.translate("KaineBuilder", u"Technique: ", None))
-        self.CheckHeapEncryption.setText(QCoreApplication.translate("KaineBuilder", u"Heap Encryption", None))
-        self.CheckStackDuplication.setText(QCoreApplication.translate("KaineBuilder", u"Stack Duplication", None))
-        self.CheckKillDate.setText(QCoreApplication.translate("KaineBuilder", u"Enable Killdate", None))
-        self.LabelAntiShellcode.setText(QCoreApplication.translate("KaineBuilder", u"Anti-Shellcode mitigation: ", None))
-        self.LabelModuleLoad.setText(QCoreApplication.translate("KaineBuilder", u"Module load technique: ", None))
-        self.CheckModuleRndOrder.setText(QCoreApplication.translate("KaineBuilder", u"Module random load order", None))
-        self.LabelModuleStomp.setText(QCoreApplication.translate("KaineBuilder", u"Module Stomp (Plugin): ", None))
-        self.LabelSleep.setText(QCoreApplication.translate("KaineBuilder", u"Sleep: ", None))
-        self.LabelJitter.setText(QCoreApplication.translate("KaineBuilder", u"Jitter (%): ", None))
-        self.CheckIndirectSyscall.setText(QCoreApplication.translate("KaineBuilder", u"Indirect Syscall", None))
-
-        QMetaObject.connectSlotsByName( widget )
-
-        self.set_defaults()
-
-        return
-
-    ##
-    ## refresh the widget based on following things:
-    ##  - new listener started
-    ##  - new script loaded
-    ##  - new agent connected
-    ##
-    def refresh( self ) -> None:
-        self.set_defaults()
-
-    def set_defaults(self) -> None:
-
-        self.ComboListener.clear()
-        listeners = pyhavoc.core.HcListenerAll()
-        if len( listeners ) == 0:
-            self.ComboListener.addItem( "(no listener available)" )
-            self.ComboListener.setEnabled( False )
-        else:
-            for i in listeners:
-                self.ComboListener.addItem( i )
-
-        self.ComboArch.clear()
-        self.ComboArch.addItem( "x64" )
-        self.ComboArch.addItem( "x86" )
-
-        self.ComboFormat.clear()
-        self.ComboFormat.addItem( "Windows Exe" )
-        self.ComboFormat.addItem( "Windows Dll" )
-        self.ComboFormat.addItem( "Windows Service Exe" )
-        self.ComboFormat.addItem( "Windows Shellcode" )
-        self.ComboFormat.addItem( "Windows VBS" )
-        self.ComboFormat.addItem( "Windows PS1" )
-
-        self.InputSleep.setText( "5" )
-        self.InputJitter.setText( "10" )
-
-        self.ComboStackSpoofing.clear()
-        self.ComboStackSpoofing.addItem( "None" )
-        self.ComboStackSpoofing.addItem( "Synthetic Frames" )
-
-        self.ComboAntiShellcode.clear()
-        self.ComboAntiShellcode.addItem( "None" )
-        self.ComboAntiShellcode.addItem( "mov rax, [rax]" )
-
-        self.ComboModuleLoad.clear()
-        self.ComboModuleLoad.addItem( "LdrLoadDll" )
-        self.ComboModuleLoad.addItem( "RtlRegisterWait( LoadLibraryW )" )
-        self.ComboModuleLoad.addItem( "RtlCreateTimer( LoadLibraryW )" )
-        self.ComboModuleLoad.addItem( "RtlQueueWorkItem( LoadLibraryW )" )
-        self.ComboModuleLoad.addItem( "TpAllocWork( LoadLibraryW )" )
-        self.ComboModuleLoad.addItem( "NtMapViewOfSection" )
-        self.ComboModuleLoad.addItem( "NtAllocateVirtualMemory" )
-
-        self.InputIndirectSyscall.setText( "NtAddBootEntry" )
-
-        self.ComboSleepObfTechnique.clear()
-        self.ComboSleepObfTechnique.addItem( "Ekko" )
-        self.ComboSleepObfTechnique.addItem( "Zilean" )
-        self.ComboSleepObfTechnique.addItem( "Foliage" )
-
-        self.ComboSleepObfJmpGadget.clear()
-        self.ComboSleepObfJmpGadget.addItem( "None" )
-        self.ComboSleepObfJmpGadget.addItem( "jmp rax" )
-        self.ComboSleepObfJmpGadget.addItem( "jmp rbx" )
-
-        self.ComboEncryption.clear()
-        self.ComboEncryption.addItem( "SystemFunction032 (RC4)" )
-        self.ComboEncryption.addItem( "SystemFunction040 (3DES)" )
-
-        return
-
-    ##
-    ## sanity check the given input
-    ## return:
-    ##  true  -> successful checked the input and nothing is wrong
-    ##  false -> failed to check and something went wrong
-    ##
-    def sanity_check( self ) -> bool:
-        return True
-
-    ##
-    ## pressing "Generate" action or
-    ## while saving a profile
-    ##
-    def generate( self ) -> dict:
-
-        config: dict = {
-            "Listener": self.ComboListener.currentText(),
-            "Arch"    : self.ComboArch.currentText(),
-            "Format"  : self.ComboFormat.currentText(),
-
-            "Core": {
-                "Sleep"  : self.InputSleep.text(),
-                "Jitter" : self.InputJitter.text(),
-            }
-        }
-
-        if self.CheckKillDate.isChecked() :
-            config[ "Core" ][ "Kill Date" ] = self.DateTimeKillDate.dateTime()
-
-        return config
-
-    ##
-    ## pressing "Save Profile" action
-    ##
-    def profile_save( self ) -> dict:
-        pass
-
-    ##
-    ## pressing "Load Profile" action
-    ##
-    def profile_load( self, profile: dict ) -> bool:
-        pass
-
-    ##
-    ## payload has been generated
-    ##
-    def payload( self, payload: bytes ) -> None:
-        pass
-
-class HcKaineCommand:
-    pass
-
 class KnPacker:
     def __init__(self):
-        self.buffer : bytes = b''
-        self.size   : int   = 0
+        self.buffer  : bytes = b''
+        self.size    : int   = 0
 
-    def build( self ):
-        return pack("<L", self.size) + self.buffer
+    def build( self ) -> bytes:
+        return pack( "<L", self.size ) + self.buffer
 
     def add_string(self, s):
         if s is None:
@@ -422,26 +47,403 @@ class KnPacker:
         self.buffer += pack(fmt, len(s)+2, s)
         self.size   += calcsize(fmt)
 
-    def add_bytes(self, b):
+    def add_raw( self, r ):
+        self.buffer += pack( "<{}s".format( len( r ) ), r )
+        self.size   += len( r )
+
+    def add_bytes( self, b ):
         if b is None:
             b = b''
-        fmt = "<L{}s".format(len(b))
-        self.buffer += pack(fmt, len(b), b)
-        self.size   += calcsize(fmt)
+        fmt = "<L{}s".format( len( b ) )
+        self.buffer += pack( fmt, len( b ), b )
+        self.size   += calcsize( fmt )
 
-    def add_u8(self, b):
-        fmt = '<c'
-        self.buffer += pack(fmt, b)
+    def add_u8( self, u8 ):
+        self.buffer += pack( '<B', u8 )
         self.size   += 1
 
-    def add_u32(self, dint):
-        self.buffer += pack("<i", dint)
+    def add_u16( self, u16 ):
+        self.buffer += pack( '<H', u16 )
+        self.size   += 2
+
+    def add_u32( self, u32 ):
+        self.buffer += pack( '<L', u32 )
         self.size   += 4
 
-    def add_u16(self, n):
-        fmt = '<h'
-        self.buffer += pack(fmt, n)
-        self.size   += 2
+    def add_u64( self, u64 ):
+        self.buffer += pack( '<Q', u64 )
+        self.size   += 8
+
+class KnConfig( KnPacker ):
+
+    def __init__( self ):
+        super().__init__()
+        self.rc4_key : bytes = b''
+        return
+
+    def build( self ) -> bytes:
+        buffer = self.buffer
+
+        if len( self.rc4_key ) != 0:
+            cipher = ARC4.new( self.rc4_key )
+            buffer = cipher.encrypt( buffer )
+
+        return pack( "<L", self.size ) + buffer
+
+    def arc4_key( self, key ):
+        self.rc4_key = key
+
+@pyhavoc.ui.HcUiBuilderRegisterView( "Kaine" )
+class HcKaineBuilder( pyhavoc.ui.HcPayloadView ):
+
+    def __init__( self, *args, **kwargs ):
+        self.LdrFlagDll        = 1 << 0
+        self.LdrFlagKnownDll   = 1 << 0
+        self.LdrFlagMapView    = 1 << 0
+        self.LdrFlagMapBuffer  = 1 << 0
+        self.LdrFlagZeroHeader = 1 << 0
+        self.LdrFlagExistCheck = 1 << 0
+
+        super().__init__( *args, **kwargs )
+
+    ##
+    ## main function to be executed
+    ## should create the widgets inputs
+    ## for the payload builder
+    ##
+    def main( self, widget: PySide6.QtWidgets.QWidget ):
+
+        self.set_builder_size( 700, 600 )
+
+        self.grid_main = QGridLayout(widget)
+        self.grid_main.setObjectName(u"grid_main")
+        self.grid_main.setSizeConstraint(QLayout.SetDefaultConstraint)
+        self.grid_main.setVerticalSpacing(6)
+        self.label_listener = QLabel(widget)
+        self.label_listener.setObjectName(u"label_listener")
+
+        self.combo_listener = QComboBox(widget)
+        self.combo_listener.setObjectName(u"combo_listener")
+
+        self.group_settings = QGroupBox(widget)
+        self.group_settings.setObjectName(u"group_settings")
+        self.gridLayout_3 = QGridLayout(self.group_settings)
+        self.gridLayout_3.setObjectName(u"gridLayout_3")
+        self.grid_settings = QGridLayout()
+        self.grid_settings.setObjectName(u"grid_settings")
+        self.label_workhour = QLabel(self.group_settings)
+        self.label_workhour.setObjectName(u"label_workhour")
+
+        self.input_sleep = QLineEdit(self.group_settings)
+        self.input_sleep.setObjectName(u"input_sleep")
+        self.input_sleep.setValidator( QIntValidator() )
+
+        self.combo_moduleldr = QComboBox(self.group_settings)
+        self.combo_moduleldr.setObjectName(u"combo_moduleldr")
+
+        self.time_starthour = QTimeEdit(self.group_settings)
+        self.time_starthour.setObjectName(u"time_starthour")
+        self.time_starthour.setDisplayFormat("HH:mm")
+        self.time_starthour.setTime( QTime( 9, 00 ) )
+
+        self.input_jitter = QLineEdit(self.group_settings)
+        self.input_jitter.setObjectName(u"input_jitter")
+        self.input_jitter.setValidator( QIntValidator() )
+
+        self.label_moduleldr = QLabel(self.group_settings)
+        self.label_moduleldr.setObjectName(u"label_moduleldr")
+
+        self.check_killdate = pyhavoc.ui.HcSwitch(self.group_settings)
+        self.check_killdate.setObjectName(u"check_killdate")
+
+        self.datetime_killdate = QDateTimeEdit(self.group_settings)
+        self.datetime_killdate.setObjectName(u"datetime_killdate")
+        self.datetime_killdate.setTimeSpec( PySide6.QtCore.Qt.TimeSpec.LocalTime )
+        self.datetime_killdate.setCalendarPopup( True )
+        self.datetime_killdate.setDateTime( PySide6.QtCore.QDateTime.currentDateTime() )
+        self.datetime_killdate.setDisplayFormat( "dd-MMM-yyyy hh:mm:00" )
+
+        self.check_workhour = pyhavoc.ui.HcSwitch(self.group_settings)
+        self.check_workhour.setObjectName(u"check_workhour")
+
+        self.label_killdate = QLabel(self.group_settings)
+        self.label_killdate.setObjectName(u"label_killdate")
+
+        self.time_endhour = QTimeEdit(self.group_settings)
+        self.time_endhour.setObjectName(u"time_endhour")
+        self.time_endhour.setDisplayFormat("HH:mm")
+        self.time_endhour.setTime( QTime( 17, 00 ) )
+
+        self.label_sleep = QLabel(self.group_settings)
+        self.label_sleep.setObjectName(u"label_sleep")
+
+        self.label_stomping = QLabel(self.group_settings)
+        self.label_stomping.setObjectName(u"label_stomping")
+
+        self.input_stomping = QLineEdit(self.group_settings)
+        self.input_stomping.setObjectName(u"input_stomping")
+
+        self.gridLayout_3.addLayout(self.grid_settings, 0, 0, 1, 1)
+
+        self.label_arch = QLabel(widget)
+        self.label_arch.setObjectName(u"label_arch")
+
+        self.combo_format = QComboBox(widget)
+        self.combo_format.setObjectName(u"combo_format")
+
+        self.grid_main.setColumnStretch(1, 1)
+        self.grid_main.setColumnMinimumWidth(0, 126)
+
+        self.combo_arch = QComboBox(widget)
+        self.combo_arch.setObjectName(u"combo_arch")
+
+        self.label_format = QLabel(widget)
+        self.label_format.setObjectName(u"label_format")
+
+        self.group_options = QGroupBox(widget)
+        self.group_options.setObjectName(u"group_options")
+
+        self.grid_main.addWidget(self.label_listener, 0, 0, 1, 1)
+        self.grid_main.addWidget(self.combo_listener, 0, 1, 1, 1)
+        self.grid_main.addWidget(self.label_arch,     1, 0, 1, 1)
+        self.grid_main.addWidget(self.combo_arch,     1, 1, 1, 1)
+        self.grid_main.addWidget(self.label_format,   2, 0, 1, 1)
+        self.grid_main.addWidget(self.combo_format,   2, 1, 1, 1)
+        self.grid_main.addWidget(self.group_settings, 3, 0, 1, 2)
+        self.grid_main.addWidget(self.group_options,  4, 0, 1, 2)
+
+        self.grid_settings.addWidget(self.label_killdate,    0, 0, 1, 1)
+        self.grid_settings.addWidget(self.datetime_killdate, 0, 2, 1, 2)
+        self.grid_settings.addWidget(self.check_killdate,    0, 1, 1, 1)
+        self.grid_settings.addWidget(self.label_workhour,    1, 0, 1, 1)
+        self.grid_settings.addWidget(self.check_workhour,    1, 1, 1, 1)
+        self.grid_settings.addWidget(self.time_starthour,    1, 2, 1, 1)
+        self.grid_settings.addWidget(self.time_endhour,      1, 3, 1, 1)
+        self.grid_settings.addWidget(self.label_sleep,       2, 0, 1, 1)
+        self.grid_settings.addWidget(self.input_sleep,       2, 2, 1, 1)
+        self.grid_settings.addWidget(self.input_jitter,      2, 3, 1, 1)
+        self.grid_settings.addWidget(self.combo_moduleldr,   3, 2, 1, 2)
+        self.grid_settings.addWidget(self.label_moduleldr,   3, 0, 1, 1)
+        self.grid_settings.addWidget(self.label_stomping,    4, 0, 1, 1)
+        self.grid_settings.addWidget(self.input_stomping,    4, 2, 1, 2)
+
+        self.label_listener.setText(QCoreApplication.translate("Form", u"Listener:", None))
+        self.group_settings.setTitle(QCoreApplication.translate("Form", u"Settings:", None))
+        self.label_workhour.setText(QCoreApplication.translate("Form", u"Work Hour:", None))
+        self.label_moduleldr.setText(QCoreApplication.translate("Form", u"Module Loading:", None))
+        self.check_killdate.setText("")
+        self.check_workhour.setText("")
+        self.label_killdate.setText(QCoreApplication.translate("Form", u"Kill Date:", None))
+        self.label_sleep.setText(QCoreApplication.translate("Form", u"Sleep/Jitter:", None))
+        self.label_stomping.setText(QCoreApplication.translate("Form", u"Stomping (Plugin):", None))
+        self.label_arch.setText(QCoreApplication.translate("Form", u"Arch:", None))
+        self.label_format.setText(QCoreApplication.translate("Form", u"Format:", None))
+        self.group_options.setTitle(QCoreApplication.translate("Form", u"Options:", None))
+
+
+        self.set_defaults()
+
+        return
+
+    ##
+    ## refresh the widget based on following things:
+    ##  - new listener started
+    ##  - new script loaded
+    ##  - new agent connected
+    ##
+    def refresh( self ) -> None:
+        self.set_defaults()
+
+    def set_defaults(self) -> None:
+
+        self.combo_listener.clear()
+        listeners = pyhavoc.core.HcListenerAll()
+        if len( listeners ) == 0:
+            self.combo_listener.addItem( "(no listener available)" )
+            self.combo_listener.setEnabled( False )
+        else:
+            for i in listeners:
+                self.combo_listener.addItem( i )
+
+        self.combo_arch.clear()
+        self.combo_arch.addItem( "x64" )
+        self.combo_arch.addItem( "x86" )
+
+        self.combo_format.clear()
+        self.combo_format.addItem( "Windows Shellcode" )
+
+        self.input_sleep.setText( "5" )
+        self.input_jitter.setText( "10" )
+
+        self.combo_moduleldr.clear()
+        self.combo_moduleldr.addItem( "LdrLoadDll" )
+        self.combo_moduleldr.addItem( "RtlRegisterWait( LoadLibraryW )" )
+        self.combo_moduleldr.addItem( "RtlCreateTimer( LoadLibraryW )" )
+        self.combo_moduleldr.addItem( "RtlQueueWorkItem( LoadLibraryW )" )
+        self.combo_moduleldr.addItem( "TpAllocWork( LoadLibraryW )" )
+        self.combo_moduleldr.addItem( "NtMapViewOfSection" )
+        self.combo_moduleldr.addItem( "NtAllocateVirtualMemory" )
+
+        return
+
+    ##
+    ## sanity check the given input
+    ## return:
+    ##  true  -> successful checked the input and nothing is wrong
+    ##  false -> failed to check and something went wrong
+    ##
+    def sanity_check( self ) -> bool:
+        return True
+
+    ##
+    ## pressing "Generate" action
+    ##
+    def generate( self ) -> dict:
+
+        working_hour: int = 0
+
+        ##
+        ## if specified pack the working hours into a single integer
+        ##
+        if self.check_workhour.isChecked():
+            start_hour    = self.time_starthour.time().hour()
+            start_minutes = self.time_starthour.time().minute()
+            end_hour      = self.time_endhour.time().hour()
+            end_minutes   = self.time_endhour.time().minute()
+
+            working_hour  = 0
+            working_hour |= 1 << 22
+            working_hour |= ( start_hour    & 0b011111 ) << 17
+            working_hour |= ( start_minutes & 0b111111 ) << 11
+            working_hour |= ( end_hour      & 0b011111 ) << 6
+            working_hour |= ( end_minutes   & 0b111111 ) << 0
+
+        ##
+        ## return the configuration as a json package
+        ##
+        return {
+            "listener": self.combo_listener.currentText(),
+            "arch"    : self.combo_arch.currentText(),
+            "format"  : self.combo_format.currentText(),
+
+            "core": {
+                "sleep"     : int( self.input_sleep.text() ),
+                "jitter"    : int( self.input_jitter.text() ),
+                "kill date" : self.check_killdate.isChecked() if self.datetime_killdate.dateTime().toSecsSinceEpoch() else 0,
+                "work hour" : working_hour,
+            }
+        }
+
+    ##
+    ## pressing "Save Profile" action
+    ##
+    def profile_save( self ) -> dict:
+        pass
+
+    ##
+    ## pressing "Load Profile" action
+    ##
+    def profile_load( self, profile: dict ) -> bool:
+        pass
+
+    ##
+    ## payload has been generated, and we are going to process it here.
+    ## this method is going to actually process the retrieved payload
+    ## by including the configuration, modules and commands and other
+    ## features.
+    ##
+    def payload_process(
+        self,
+        payload: bytes,
+        context: dict
+    ) -> bytes:
+        """
+        process payload with the given context configuration
+
+        :param payload:
+            kaine core payload
+
+        :param context:
+            context configuration
+
+        :return:
+            processed payload ready to use
+        """
+        processed    : bytes    = b''
+        config       : KnConfig = KnConfig()
+        modules      : KnPacker = KnPacker()
+        arc4_key     : bytes    = get_random_bytes( 16 )
+        arc4_pat     : bytes    = b'{KAINE-ARC4-KEY}'
+        magic_val    : bytes    = b'5pdr'
+        flags        : int      = 0
+        exec_flag    : int      = 0
+        exec_module  : int      = ""
+
+        config.arc4_key( arc4_key )
+
+        ##
+        ## [Core] Config:
+        ##  [ Magic Value  ] u32 // this indicates if the configuration has been successfully decrypted
+        ##  [ Flags        ] u32
+        ##  [ Kill Date    ] u32
+        ##  [ Work Hour    ] u32
+        ##  [ Sleep        ] u32
+        ##  [ Jitter       ] u32
+        ##  [ Exec Flags   ] u8
+        ##  [ Exec Module  ] wstring
+        ##  [ Modules      ] array<u8>
+        ##    [ Advapi32 Flag ] u8
+
+        config.add_raw( magic_val )
+        config.add_u32( flags )
+        config.add_u32( context[ 'implant' ][ 'core' ][ 'kill date' ] )
+        config.add_u32( context[ 'implant' ][ 'core' ][ 'work hour' ] )
+        config.add_u32( context[ 'implant' ][ 'core' ][ 'sleep' ]     )
+        config.add_u32( context[ 'implant' ][ 'core' ][ 'jitter' ]    )
+        config.add_u8( exec_flag )
+        config.add_wide_string( exec_module )
+
+        ##
+        ## modules flags
+        ##
+
+        ##
+        ## advapi32.dll
+        ##
+        config.add_u8( self.LdrFlagDll )
+
+        ##
+        ## Kaine implant format:
+        ##
+        ##   [ kaine agent ]
+        ##   [ modules     ]
+        ##      [ count  ]
+        ##      [ ------ ]
+        ##      [ flags  ]
+        ##      [ size   ]
+        ##      [ module ]
+        ##      [ ------ ]
+        ##      [ flags  ]
+        ##      [ size   ]
+        ##      [ module ]
+        ##       ...
+        ##   [ config      ]
+        ##       ...
+        ##
+        processed += payload
+        processed += modules.build()
+        processed += config.build()
+
+        ##
+        ## replace the key inside the kaine
+        ## payload with the generated one
+        ##
+        processed.replace( arc4_pat, arc4_key )
+
+        return processed
+
+class HcKaineCommand:
+    pass
 
 @pyhavoc.agent.HcAgentExport
 class KnParser:
@@ -456,9 +458,6 @@ class KnParser:
 
     def length( self ) -> int:
         return len( self.buffer )
-
-
-
 
     def parse_int( self ) -> int:
         if self.length() < 4:
