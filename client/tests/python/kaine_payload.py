@@ -21,7 +21,9 @@ from Crypto.Cipher import ARC4
 from Crypto.Random import get_random_bytes
 
 KAINE_COMMANDS: list = []
+KAINE_MODULES : list = []
 
+@pyhavoc.agent.HcAgentExport
 class KnPacker:
     def __init__(self):
         self.buffer  : bytes = b''
@@ -136,7 +138,7 @@ class HcKaineBuilder( pyhavoc.ui.HcPayloadView ):
 
         self.input_sleep = QLineEdit(self.group_settings)
         self.input_sleep.setObjectName(u"input_sleep")
-        self.input_sleep.setValidator( QIntValidator() )
+        self.input_sleep.setValidator(QIntValidator())
 
         self.combo_moduleldr = QComboBox(self.group_settings)
         self.combo_moduleldr.setObjectName(u"combo_moduleldr")
@@ -148,7 +150,7 @@ class HcKaineBuilder( pyhavoc.ui.HcPayloadView ):
 
         self.input_jitter = QLineEdit(self.group_settings)
         self.input_jitter.setObjectName(u"input_jitter")
-        self.input_jitter.setValidator( QIntValidator() )
+        self.input_jitter.setValidator(QIntValidator())
 
         self.label_moduleldr = QLabel(self.group_settings)
         self.label_moduleldr.setObjectName(u"label_moduleldr")
@@ -200,8 +202,11 @@ class HcKaineBuilder( pyhavoc.ui.HcPayloadView ):
         self.label_format = QLabel(widget)
         self.label_format.setObjectName(u"label_format")
 
-        self.group_options = QGroupBox(widget)
+        self.group_options = QGroupBox( widget )
         self.group_options.setObjectName(u"group_options")
+
+        self.layout_options = QFormLayout( self.group_options )
+        self.layout_options.setObjectName( u"layout_options" )
 
         self.grid_main.addWidget(self.label_listener, 0, 0, 1, 1)
         self.grid_main.addWidget(self.combo_listener, 0, 1, 1, 1)
@@ -240,8 +245,18 @@ class HcKaineBuilder( pyhavoc.ui.HcPayloadView ):
         self.label_format.setText(QCoreApplication.translate("Form", u"Format:", None))
         self.group_options.setTitle(QCoreApplication.translate("Form", u"Options:", None))
 
-
         self.set_defaults()
+
+        ##
+        ## add registered modules
+        ##
+        self.registered_modules = []
+
+        for ModuleClass in KAINE_MODULES:
+            module = ModuleClass()
+            module.interface( self.layout_options )
+
+            self.registered_modules.append( module )
 
         return
 
@@ -369,7 +384,7 @@ class HcKaineBuilder( pyhavoc.ui.HcPayloadView ):
         :return:
             processed payload ready to use
         """
-        processed    : bytes    = b''
+        processed    : bytes    = payload
         config       : KnConfig = KnConfig()
         modules      : KnPacker = KnPacker()
         arc4_key     : bytes    = get_random_bytes( 16 )
@@ -382,24 +397,26 @@ class HcKaineBuilder( pyhavoc.ui.HcPayloadView ):
         config.arc4_key( arc4_key )
 
         ##
-        ## [Core] Config:
-        ##  [ Magic Value  ] u32 // this indicates if the configuration has been successfully decrypted
-        ##  [ Flags        ] u32
-        ##  [ Kill Date    ] u32
-        ##  [ Work Hour    ] u32
-        ##  [ Sleep        ] u32
-        ##  [ Jitter       ] u32
-        ##  [ Exec Flags   ] u8
-        ##  [ Exec Module  ] wstring
-        ##  [ Modules      ] array<u8>
-        ##    [ Advapi32 Flag ] u8
+        ## [core] config:
+        ##  [ magic value  ] u32 // this indicates if the configuration has been successfully decrypted
+        ##  [ flags        ] u32
+        ##  [ kill date    ] u32
+        ##  [ work hour    ] u32
+        ##  [ sleep        ] u32
+        ##  [ jitter       ] u32
+        ##  [ exec flags   ] u8
+        ##  [ exec module  ] wstring
+        ##  [ libraries    ] array<u8>
+        ##    [ advapi32 flag ] u8
+        ##  [ extensions   ] array<[length, bytes]>
+        ##
 
         config.add_raw( magic_val )
         config.add_u32( flags )
         config.add_u32( context[ 'implant' ][ 'core' ][ 'kill date' ] )
         config.add_u32( context[ 'implant' ][ 'core' ][ 'work hour' ] )
-        config.add_u32( context[ 'implant' ][ 'core' ][ 'sleep' ]     )
-        config.add_u32( context[ 'implant' ][ 'core' ][ 'jitter' ]    )
+        config.add_u32( context[ 'implant' ][ 'core' ][ 'sleep'     ] )
+        config.add_u32( context[ 'implant' ][ 'core' ][ 'jitter'    ] )
         config.add_u8( exec_flag )
         config.add_wide_string( exec_module )
 
@@ -413,24 +430,35 @@ class HcKaineBuilder( pyhavoc.ui.HcPayloadView ):
         config.add_u8( self.LdrFlagDll )
 
         ##
+        ## process modules and configuration
+        ##
+        for module in self.registered_modules:
+            ##
+            ## add the module configuration to the agent config
+            ##
+            config.add_bytes( module.configuration( context ) )
+
+            ##
+            ## add the config code to the extensions list
+            ##
+            modules.add_bytes( module.module() )
+
+        ##
         ## Kaine implant format:
         ##
         ##   [ kaine agent ]
         ##   [ modules     ]
-        ##      [ count  ]
+        ##      [ size   ]
         ##      [ ------ ]
-        ##      [ flags  ]
         ##      [ size   ]
         ##      [ module ]
         ##      [ ------ ]
-        ##      [ flags  ]
         ##      [ size   ]
         ##      [ module ]
         ##       ...
         ##   [ config      ]
         ##       ...
         ##
-        processed += payload
         processed += modules.build()
         processed += config.build()
 
@@ -1401,6 +1429,24 @@ class HcKaine( pyhavoc.agent.HcAgent ):
                 raise Exception( ctx[ 'status' ] )
 
         return ctx[ 'task-uuid' ]
+
+@pyhavoc.agent.HcAgentExport
+class HcKaineBuildModule:
+
+    def __init_subclass__( cls, **kwargs ):
+        KAINE_MODULES.append( cls )
+
+    def __init__( self ):
+        return
+
+    def interface( self, layout: QVBoxLayout ):
+        pass
+
+    def configuration( self, config: dict ) -> bytes:
+        pass
+
+    def module( self ) -> bytes:
+        pass
 
 @pyhavoc.agent.HcAgentExport
 class HcKaineCommand:
