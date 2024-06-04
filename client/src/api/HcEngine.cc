@@ -30,8 +30,9 @@ PYBIND11_EMBEDDED_MODULE( _pyhavoc, m ) {
         //
         // Havoc Listener api functions
         //
-        core.def( "HcListenerProtocolData", HcListenerProtocolData, py::call_guard<py::gil_scoped_release>() );
-        core.def( "HcListenerAll",          HcListenerAll, py::call_guard<py::gil_scoped_release>() );
+        core.def( "HcListenerProtocolData", HcListenerProtocolData );
+        core.def( "HcListenerAll",          HcListenerAll );
+        core.def( "HcListenerQueryType",    HcListenerQueryType );
     }
 
     //

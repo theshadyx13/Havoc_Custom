@@ -198,6 +198,7 @@ auto HcPageListener::addListener(
     TableWidget->setSortingEnabled( isSortingEnabled );
 
     TableEntries.push_back( listener );
+    Listeners.push_back( data );
 
     /* increase the number of listeners */
     ListenersRunning++;

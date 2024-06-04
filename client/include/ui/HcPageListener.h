@@ -47,6 +47,7 @@ public:
     QTableWidgetItem* TitlePort         = nullptr;
     QTableWidgetItem* TitleStatus       = nullptr;
     std::vector<json> Protocols         = {};
+    std::vector<json> Listeners         = {};
 
     explicit HcPageListener();
     auto retranslateUi() -> void;

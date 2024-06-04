@@ -123,7 +123,7 @@ public:
 
     auto ListenerObject(
         const std::string& name
-    ) -> std::vector<json>;
+    ) -> std::optional<json>;
 
     auto AddListener(
         const json& listener

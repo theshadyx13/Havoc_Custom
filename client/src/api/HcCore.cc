@@ -44,3 +44,17 @@ auto HcListenerAll() -> std::vector<std::string>
 {
     return Havoc->Listeners();
 }
+
+auto HcListenerQueryType(
+    const std::string& name
+) -> std::string {
+    for ( auto& n : Havoc->Listeners() ) {
+        if ( auto obj = Havoc->ListenerObject( n ) ) {
+            if ( obj.has_value() && obj.value()[ "name" ] == name ) {
+                return obj.value()[ "protocol" ].get<std::string>();
+            }
+        }
+    }
+
+    return std::string();
+}

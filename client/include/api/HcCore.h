@@ -12,8 +12,8 @@ auto HcListenerProtocolData(
 
 auto HcListenerAll() -> std::vector<std::string>;
 
-auto HcListenerQuery(
+auto HcListenerQueryType(
     const std::string& name
-) -> json;
+) -> std::string;
 
 #endif //HAVOCCLIENT_API_HCCORE_H

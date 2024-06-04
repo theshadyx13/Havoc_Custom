@@ -425,6 +425,21 @@ auto HavocClient::AddListener(
     Gui->PageListener->addListener( listener );
 }
 
+auto HavocClient::ListenerObject(
+    const std::string &name
+) -> std::optional<json> {
+
+    for ( auto& data : listeners ) {
+        if ( data.contains( "name" ) ) {
+            if ( data[ "name" ].is_string() ) {
+                return data;
+            }
+        }
+    }
+
+    return std::nullopt;
+}
+
 auto HavocClient::Listeners() -> std::vector<std::string>
 {
     auto names = std::vector<std::string>();

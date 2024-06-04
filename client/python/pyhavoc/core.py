@@ -12,3 +12,6 @@ def HcListenerProtocolData(
 
 def HcListenerAll() -> list[str]:
     return core.HcListenerAll()
+
+def HcListenerQueryType( name: str ) -> str:
+    return core.HcListenerQueryType( name )
