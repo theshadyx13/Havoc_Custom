@@ -21,8 +21,7 @@ from Crypto.Cipher import ARC4
 from Crypto.Random import get_random_bytes
 
 KAINE_COMMANDS  : list = []
-KAINE_MODULES   : list = []
-KAINE_PROTOCOLS : list = []
+KAINE_MODULES   : dict = dict([(k, []) for k in range(3)])
 
 @pyhavoc.agent.HcAgentExport
 class KnPacker:
@@ -100,12 +99,13 @@ class KnConfig( KnPacker ):
 class HcKaineBuilder( pyhavoc.ui.HcPayloadView ):
 
     def __init__( self, *args, **kwargs ):
-        self.LdrFlagDll        = 1 << 0
-        self.LdrFlagKnownDll   = 1 << 0
-        self.LdrFlagMapView    = 1 << 0
-        self.LdrFlagMapBuffer  = 1 << 0
-        self.LdrFlagZeroHeader = 1 << 0
-        self.LdrFlagExistCheck = 1 << 0
+        self.LdrFlagDll         = 1 << 0
+        self.LdrFlagKnownDll    = 1 << 0
+        self.LdrFlagMapView     = 1 << 0
+        self.LdrFlagMapBuffer   = 1 << 0
+        self.LdrFlagZeroHeader  = 1 << 0
+        self.LdrFlagExistCheck  = 1 << 0
+        self.registered_modules = []
 
         super().__init__( *args, **kwargs )
 
@@ -249,60 +249,66 @@ class HcKaineBuilder( pyhavoc.ui.HcPayloadView ):
         self.set_defaults()
 
         ##
-        ## add registered modules
-        ##
-        self.registered_modules = []
-
-        ##
         ## TODO: when the operator changes the protocol erase the options
         ##       widget and re-execute every module and protocol
         ##
+        self.combo_listener.currentTextChanged.connect(self.refresh_modules)
+        self.refresh_modules()
+
+        return
+
+    def protocol_module( self, listener_type: str ):
+        for ModulePriority in KAINE_MODULES.values():
+            for ModuleClass in ModulePriority:
+                module = ModuleClass()
+
+                if module.protocol() == listener_type:
+                    return ModuleClass
+        return None
+
+    def refresh_modules(
+        self
+    ) -> None:
+        ##
+        ## clean up previous options and modules
+        ##
+        self.registered_modules = []
+        for i in reversed(range(self.layout_options.count())):
+            self.layout_options.itemAt(i).widget().deleteLater()
 
         ##
         ## add protocol module
         ##
-        listener_type = pyhavoc.core.HcListenerQueryType( self.combo_listener.currentText() )
-        for m in KAINE_PROTOCOLS:
-            if m[ "protocol" ] == listener_type:
-                module = m[ 'interface' ]()
-                module.interface( self.layout_options )
-                self.registered_modules.append( module )
-                break
+        listener_type      = pyhavoc.core.HcListenerQueryType( self.combo_listener.currentText() )
+        listener_interface = self.protocol_module( listener_type )
+
+        if listener_interface is None:
+            raise RuntimeError( f"listener interface for {listener_type} not found" )
+        else:
+            module = listener_interface()
+            module.interface( self.layout_options )
 
         ##
         ## add feature and extensions
         ##
-        for ModuleClass in KAINE_MODULES:
-            found  = False
-
-            ##
-            ## check if it is a protocol module,
-            ## and It's if is then ignore it
-            ##
-            for m in KAINE_PROTOCOLS:
-                if m[ "interface" ] == ModuleClass:
-                    found = True
-                    break
-
-            ##
-            ## if no the current module is not related to
-            ## protocol and transportation then ignore it
-            ##
-            if not found:
+        for ModulePriority in KAINE_MODULES.values():
+            for ModuleClass in ModulePriority:
+                ##
+                ## if no the current module is not related to
+                ## protocol and transportation then ignore it
+                ## as we already added it first
+                ##
                 module = ModuleClass()
-                module.interface( self.layout_options )
+                if module.protocol() == "":
+                    module.interface( self.layout_options )
+
+                ##
+                ## register the module in the order of the priority
+                ##
                 self.registered_modules.append( module )
 
         return
 
-    ##
-    ## refresh the widget based on following things:
-    ##  - new listener started
-    ##  - new script loaded
-    ##  - new agent connected
-    ##
-    def refresh( self ) -> None:
-        self.set_defaults()
 
     def set_defaults(self) -> None:
 
@@ -474,14 +480,25 @@ class HcKaineBuilder( pyhavoc.ui.HcPayloadView ):
         ##
         for module in self.registered_modules:
             ##
-            ## add the module configuration to the agent config
+            ## only add it when the module code has been returned
             ##
-            config.add_raw( module.configuration( context ) )
+            extension = module.module()
+            if len( extension ) > 0:
+                ##
+                ## add the module configuration to
+                ## the agent config if specified
+                ##
+                configuration = module.configuration( context )
+                if len( configuration ) == 0:
+                    packer = KnPacker()
+                    config.add_raw( packer.build() )
+                else:
+                    config.add_raw( configuration )
 
-            ##
-            ## add the config code to the extensions list
-            ##
-            modules.add_bytes( module.module() )
+                ##
+                ## add the config code to the extensions list
+                ##
+                modules.add_bytes( extension )
 
         ##
         ## replace the key inside the kaine
@@ -1470,24 +1487,35 @@ class HcKaine( pyhavoc.agent.HcAgent ):
 
         return ctx[ 'task-uuid' ]
 
-
-@pyhavoc.agent.HcAgentExport
-def KnKaineBuildProtocol( type: str ):
-
-    def _register( interface ):
-        KAINE_PROTOCOLS.append( {
-            "protocol" : type,
-            "interface": interface
-        } )
-
-    return _register
-
-
 @pyhavoc.agent.HcAgentExport
 class HcKaineBuildModule:
 
     def __init_subclass__( cls, **kwargs ):
-        KAINE_MODULES.append( cls )
+        protocol = "" # no protocol by default
+        priority = 2  # default priority
+
+        ##
+        ## if protocol is set then insert it
+        ##
+        if 'protocol' in kwargs:
+            protocol = kwargs[ 'protocol' ]
+            priority = 1                    # communication modules have a slightly higher priority
+        setattr( cls, "protocol", lambda self: protocol )
+
+        ##
+        ## if priority is set then insert it
+        ##
+        if 'priority' in kwargs:
+            priority = kwargs[ 'priority' ]
+        setattr( cls, "priority", lambda self: priority )
+
+        ##
+        ## raise exception if priority is higher than 2
+        ##
+        if priority > 2:
+            raise RuntimeError( "priority cannot be higher than 2" )
+
+        KAINE_MODULES[ priority ].append( cls )
 
     def __init__( self ):
         return

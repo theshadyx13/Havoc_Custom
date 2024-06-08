@@ -216,6 +216,7 @@ auto HavocClient::Main(
     Gui->PageScripts->LoadScript( "tests/python/listener_http.py" );
 
     Gui->PageScripts->LoadScript( "../../Plugins/kaine-kit/modules/modules.py" );
+    Gui->PageScripts->LoadScript( "../../Plugins/kaine-kit/modules/mdl/http/plugin.py" );
 
     //
     // set up the event thread and connect to the
