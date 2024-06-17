@@ -262,8 +262,12 @@ class HcKaineBuilder( pyhavoc.ui.HcPayloadView ):
             for ModuleClass in ModulePriority:
                 module = ModuleClass()
 
+                if len( listener_type ) == 0 and len( module.protocol() ) == 0:
+                    continue
+
                 if module.protocol() == listener_type:
                     return ModuleClass
+
         return None
 
     def refresh_modules(
@@ -279,14 +283,15 @@ class HcKaineBuilder( pyhavoc.ui.HcPayloadView ):
         ##
         ## add protocol module
         ##
-        listener_type      = pyhavoc.core.HcListenerQueryType( self.combo_listener.currentText() )
-        listener_interface = self.protocol_module( listener_type )
+        if self.combo_listener.currentText() == '(no listener available)':
+            listener_type      = pyhavoc.core.HcListenerQueryType( self.combo_listener.currentText() )
+            listener_interface = self.protocol_module( listener_type )
 
-        if listener_interface is None:
-            raise RuntimeError( f"listener interface for {listener_type} not found" )
-        else:
-            module = listener_interface()
-            module.interface( self.layout_options )
+            if listener_interface is None:
+                raise RuntimeError( f"listener interface for {listener_type} not found" )
+            else:
+                module = listener_interface()
+                module.interface( self.layout_options )
 
         ##
         ## add feature and extensions
@@ -553,12 +558,26 @@ class KnParser:
 
         return val[ 0 ]
 
-    def parse_bytes( self ) -> bytes:
-        length      = self.parse_int()
-        buf         = self.buffer[ :length ]
-        self.buffer = self.buffer[ length: ]
+    def get_u8( self ) -> int:
+        return unpack( "<B", self.parse_pad( 1 ) )[ 0 ]
 
-        return buf
+    def get_u16( self ) -> int:
+        return unpack( "<H", self.parse_pad( 2 ) )[ 0 ]
+
+    def get_u32( self ) -> int:
+        return unpack( "<L", self.parse_pad( 4 ) )[ 0 ]
+
+    def get_u64( self ) -> int:
+        return unpack( "<Q", self.parse_pad( 8 ) )[ 0 ]
+
+    def get_wide_str( self ) -> str:
+        return self.parse_bytes().decode( 'utf-16le' ).rstrip('\x00')
+
+    def get_str( self ):
+        return self.parse_str()
+
+    def parse_bytes( self ) -> bytes:
+        return self.parse_pad( self.parse_int() )
 
     def parse_pad( self, length: int ) -> bytes:
         if self.length() < length:
@@ -571,7 +590,6 @@ class KnParser:
 
     def parse_str( self ) -> str:
         return self.parse_bytes().decode( 'utf-8' )
-
 
 @pyhavoc.agent.HcAgentExport
 class KnObjectModule:
@@ -1123,6 +1141,96 @@ class HcKaine( pyhavoc.agent.HcAgent ):
 
         return resp
 
+    def extension_execute(
+        self,
+        command        : int,
+        *args,
+        callback       : object = None,
+        wait_to_finish : bool   = True
+    ) -> tuple[bytes, int]:
+        """
+        executes a loaded module/extension
+
+        :param command:
+            module command id
+
+        :param args:
+            arguments to pass to the module/extension
+
+        :param callback:
+            callback function to invoke
+
+        :param wait_to_finish:
+            if we should wait for the function to finish executing
+
+        :return:
+            returning a tuple -> (data, task-uuid)
+
+            data:
+                data returned from the extensions
+
+            task-uuid
+                uuid of task
+        """
+        status        : int      = 0
+        ret           : bytes    = b''
+        task_uuid     : int      = 0
+        packer        : KnPacker = KnPacker()
+        callback_uuid : str      = ''
+
+        ##
+        ## pack arguments
+        ##
+        for i in args:
+            if type( i ) == int:
+                packer.add_u32( i )
+            elif type( i ) == str:
+                packer.add_string( i )
+            elif type( i ) == bytes:
+                packer.add_bytes( i )
+
+        ##
+        ## register callback
+        ##
+        if callback is not None:
+            callback_uuid = "Kaine-" + str( uuid.uuid4() )
+            pyhavoc.agent.HcAgentRegisterCallback( callback_uuid, callback )
+
+        ##
+        ## task the agent to invoke an object file
+        ##
+        ctx = self.agent_execute( {
+                "command":   "IoModuleControl",
+                "arguments": {
+                    "control"      : "execute",
+                    "command"      : command,
+                    "arguments"    : packer.buffer,
+                    "callback-uuid": callback_uuid,
+                }
+            },
+            wait_to_finish
+        )
+
+        ##
+        ## if there is something to parse then
+        ## lets parse it and return it
+        ##
+        if wait_to_finish is True:
+            if 'error' in ctx:
+                raise Exception( ctx[ 'error' ] )
+
+            if 'status' in ctx:
+                if ctx[ 'status' ] == 'STATUS_NOT_FOUND':
+                    raise Exception( 'received STATUS_NOT_FOUND meaning the specified command has not been registered' )
+
+                if ctx[ 'status' ] != 'STATUS_SUCCESS':
+                    raise Exception( ctx[ 'status' ] )
+
+            if "return" in ctx:
+                ret = base64.b64decode( ctx[ "return" ].encode( 'utf-8' ) )
+
+        return ret, ctx[ 'task-uuid' ]
+
     def token_uid(
         self,
         token_handle  : int  = 0,
@@ -1524,10 +1632,10 @@ class HcKaineBuildModule:
         pass
 
     def configuration( self, config: dict ) -> bytes:
-        pass
+        return b''
 
     def module( self ) -> bytes:
-        pass
+        return b''
 
 @pyhavoc.agent.HcAgentExport
 class HcKaineCommand:
