@@ -389,12 +389,18 @@ auto HcPageAgent::actionShowHidden(
 auto HcPageAgent::actionPayloadBuilder(
     bool checked
 ) -> void {
-    auto dialog = new HcDialogBuilder;
+    auto gil    = py11::gil_scoped_acquire();
+    auto dialog = HcDialogBuilder();
 
-    QObject::connect( Havoc->Gui, &HcMainWindow::signalBuildLog, dialog, &HcDialogBuilder::EventBuildLog );
+    QObject::connect( Havoc->Gui, &HcMainWindow::signalBuildLog, &dialog, &HcDialogBuilder::EventBuildLog );
 
-    dialog->exec();
-    dialog->Release();
+    //
+    // if there was an error while loading or executing
+    // any scripts do not display the window
+    //
+    if ( ! dialog.ErrorReceived ) {
+        dialog.exec();
+    }
 }
 
 HcAgentConsole::HcAgentConsole(

@@ -91,6 +91,12 @@ HcDialogBuilder::HcDialogBuilder(
     QMetaObject::connectSlotsByName( this );
 }
 
+HcDialogBuilder::~HcDialogBuilder() {
+    for ( auto& builder : Builders ) {
+        delete builder.widget;
+    }
+}
+
 auto HcDialogBuilder::retranslateUi() -> void {
     setWindowTitle( "Payload Builder" );
 
@@ -128,9 +134,10 @@ auto HcDialogBuilder::AddBuilder(
     } catch ( py11::error_already_set &eas ) {
         Helper::MessageBox(
             QMessageBox::Icon::Critical,
-            "Builder loading error",
+            "Builder python error",
             std::string( eas.what() )
         );
+        ErrorReceived = true;
         return;
     }
 
@@ -143,12 +150,6 @@ auto HcDialogBuilder::AddBuilder(
     StackedBuilders->addWidget( builder.widget );
 
     Builders.push_back( builder );
-}
-
-auto HcDialogBuilder::Release() -> void {
-    for ( auto& builder : Builders ) {
-        delete builder.widget;
-    }
 }
 
 auto HcDialogBuilder::PressedGenerate() -> void

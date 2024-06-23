@@ -39,10 +39,12 @@ public:
     QPushButton*    ButtonLoadProfile = nullptr;
     QListWidget*    ListProfiles      = nullptr;
     QTextEdit*      TextBuildLog      = nullptr;
+    bool            ErrorReceived     = false;
 
     std::vector<Builder> Builders = {};
 
     explicit HcDialogBuilder( QWidget* parent = nullptr );
+    ~HcDialogBuilder();
 
     auto retranslateUi() -> void;
 
@@ -50,8 +52,6 @@ public:
         const std::string&  name,
         const py11::object& object
     ) -> void;
-
-    auto Release() -> void;
 
 private:
     auto BuilderObject(

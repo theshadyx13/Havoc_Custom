@@ -283,13 +283,11 @@ class HcKaineBuilder( pyhavoc.ui.HcPayloadView ):
         ##
         ## add protocol module
         ##
-        if self.combo_listener.currentText() == '(no listener available)':
+        if self.combo_listener.currentText() != '(no listener available)':
             listener_type      = pyhavoc.core.HcListenerQueryType( self.combo_listener.currentText() )
             listener_interface = self.protocol_module( listener_type )
 
-            if listener_interface is None:
-                raise RuntimeError( f"listener interface for {listener_type} not found" )
-            else:
+            if listener_interface is not None:
                 module = listener_interface()
                 module.interface( self.layout_options )
 
