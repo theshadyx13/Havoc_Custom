@@ -239,6 +239,12 @@ auto HavocClient::eventDispatch(
                     arg = data[ "data" ].get<json>();
 
                     //
+                    // acquire python gil to interact with the
+                    // python function and call the callback
+                    //
+                    auto gil = py11::gil_scoped_acquire();
+
+                    //
                     // get the data to pass to the callback
                     //
                     if ( arg.contains( "data" ) ) {
@@ -292,12 +298,6 @@ auto HavocClient::eventDispatch(
                         // did we found a callback based on the uuid ?
                         //
                         if ( callback.has_value() ) {
-                            //
-                            // acquire python gil to interact with the
-                            // python function and call the callback
-                            //
-                            py11::gil_scoped_acquire gil;
-
                             //
                             // search for the agent via the specified uuid
                             //

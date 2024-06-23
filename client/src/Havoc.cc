@@ -200,24 +200,22 @@ auto HavocClient::Main(
     //
     // setup Python thread
     //
-    // Python.Thread = new QThread;
     Python.Engine = new HcPyEngine();
-    // Python.Engine->moveToThread( Python.Thread );
-    // QObject::connect( Python.Thread, & QThread::started, Python.Engine, & HcPyEngine::run );
     Python.Engine->run();
 
     //
     // merely debug purpose loading the scripts at startup
+    //
+
     //
     // TODO: remove this in future or
     //       move it to the config file
     //
     Gui->PageScripts->LoadScript( "tests/python/kaine_payload.py" );
     Gui->PageScripts->LoadScript( "tests/python/listener_http.py" );
-
-    Gui->PageScripts->LoadScript( "../../Plugins/kaine-kit/modules/modules.py" );
-    Gui->PageScripts->LoadScript( "../../Plugins/kaine-kit/kaine/modules/http/plugin.py" );
-    Gui->PageScripts->LoadScript( "../../Plugins/kaine-kit/kaine/modules/process/plugin.py" );
+    Gui->PageScripts->LoadScript( "../../kaine-kit/modules/modules.py" );
+    Gui->PageScripts->LoadScript( "../../kaine-kit/kaine/modules/http/plugin.py" );
+    Gui->PageScripts->LoadScript( "../../kaine-kit/kaine/modules/process/plugin.py" );
 
     //
     // set up the event thread and connect to the
