@@ -968,6 +968,35 @@ class HcKaine( pyhavoc.agent.HcAgent ):
 
         return resp[ 'success' ]
 
+    def traffic(self) -> tuple[int, int]:
+        ##
+        ## remove the callback from the server
+        ##
+        resp = self.agent_execute( {
+            "command": "KnTraffic"
+        }, True )
+
+        return resp[ 'send' ], resp[ 'received' ]
+
+    def callback_remove(
+        self,
+        callback_uuid: str
+    ):
+        ##
+        ## remove the callback from the client
+        ##
+        pyhavoc.agent.HcAgentUnRegisterCallback( callback_uuid )
+
+        ##
+        ## remove the callback from the server
+        ##
+        self.agent_execute( {
+            "command": "KnCallbackRemove",
+            "arguments": {
+                "callback-uuid": callback_uuid
+            }
+        }, True )
+
     def object_module(
         self,
         object     : any,
@@ -1694,6 +1723,23 @@ class HcKaineCommand:
 
         return parser_args
 
+    def log_info( self, text ):
+        self.agent().console_log( text )
+
+    def log_error( self, text ):
+        self.agent().console_log( type='error', text=text )
+
+    def log_warning( self, text ):
+        self.agent().console_log( type='warning', text=text )
+
+    def log_good( self, text ):
+        self.agent().console_log( type='success', text=text )
+
+    def log_debug( self, text ):
+        self.agent().console_log( type='debug', text=text )
+
+    def log_raw( self, text ):
+        self.agent().console_log( type='raw', text=text )
 
     def execute(
         self,
