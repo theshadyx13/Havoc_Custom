@@ -377,7 +377,6 @@ class HcKaineBuilder( pyhavoc.ui.HcPayloadView ):
             working_hour |= ( start_minutes & 0b111111 ) << 11
             working_hour |= ( end_hour      & 0b011111 ) << 6
             working_hour |= ( end_minutes   & 0b111111 ) << 0
-
         if self.check_killdate.isChecked():
             kill_date = self.datetime_killdate.dateTime().toSecsSinceEpoch()
 
@@ -621,7 +620,6 @@ class KnObjectModule:
         ## byte array to be loaded by the agent
         ##
         if type( object ) == bytes:
-
             if len(args) > 0:
                 for i in args:
                     if type( i ) == int:
@@ -1741,10 +1739,7 @@ class HcKaineCommand:
     def log_raw( self, text ):
         self.agent().console_log( type='raw', text=text )
 
-    def execute(
-        self,
-        args
-    ):
+    def execute( self, args ):
         pass
 
 @pyhavoc.agent.HcAgentExport

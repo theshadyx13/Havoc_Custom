@@ -216,6 +216,7 @@ auto HavocClient::Main(
     Gui->PageScripts->LoadScript( "../../kaine-kit/modules/modules.py" );
     Gui->PageScripts->LoadScript( "../../kaine-kit/kaine/modules/http/plugin.py" );
     Gui->PageScripts->LoadScript( "../../kaine-kit/kaine/modules/process/plugin.py" );
+    Gui->PageScripts->LoadScript( "../../kaine-kit/kaine/modules/firebeam/plugin.py" );
 
     //
     // set up the event thread and connect to the
