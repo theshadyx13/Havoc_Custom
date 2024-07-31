@@ -42,7 +42,7 @@ var CobraServer = &cobra.Command{
 
 		if flags.Server.Debug {
 			logger.SetDebug(true)
-			logger.Debug("Debug mode enabled")
+			logger.Debug("debug mode enabled")
 		}
 
 		logger.Info("%v [Version: %v %v]", colors.BoldWhite("Havoc Framework"), server.Version, colors.BoldBlue(server.CodeName))
@@ -58,7 +58,8 @@ var CobraServer = &cobra.Command{
 				return nil
 			}
 		} else {
-			logger.Error("No profile specified. Specify a profile with --profile or choose the standard profile with --default")
+			logger.Error("no profile specified")
+			logger.Error("specify a profile with --profile or choose the standard profile with --default")
 			os.Exit(1)
 		}
 

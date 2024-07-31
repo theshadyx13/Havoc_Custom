@@ -54,16 +54,41 @@ func (t *Teamserver) Start() {
 	}
 
 	// load all plugins that has been specified in the folder
-	logger.Info("loading plugins [%v]:", len(server.Plugins))
-	for i := range server.Plugins {
-		var ext *plugin.Plugin
+	if len(server.Plugins) != 0 {
+		logger.Info("loading plugins [%v]:", len(server.Plugins))
+		for i := range server.Plugins {
+			var ext *plugin.Plugin
 
-		if ext, err = t.plugins.RegisterPlugin(server.Plugins[i]); err != nil {
-			logger.Error("failed to load plugin: %v", err)
+			if ext, err = t.plugins.RegisterPlugin(server.Plugins[i]); err != nil {
+				logger.Error("failed to load plugin: %v", err)
+			}
+
+			if ext != nil {
+				logger.Info(" %v plugin loaded => \"%v\"", colors.BoldBlue("*"), colors.BoldBlue(ext.Name))
+			}
+		}
+	}
+
+	// check if the ssl certification has been set in the profile
+	if len(server.Ssl.Key) == 0 && len(server.Ssl.Key) == 0 {
+		// has not been set, so we are going to generate a new pair of certs
+		certPath, keyPath, err := t.Server.GenerateSSL(server.Host, t.ConfigPath())
+		if err != nil {
+			return
 		}
 
-		if ext != nil {
-			logger.Info(" %v plugin loaded => \"%v\"", colors.BoldBlue("*"), colors.BoldBlue(ext.Name))
+		logger.Info("generated ssl cert: %v", certPath)
+		err = t.Server.SetSSL(certPath, keyPath)
+		if err != nil {
+			logger.Error("failed to set ssl cert: %v", colors.Red(err))
+			return
+		}
+	} else {
+		logger.Info("using defined ssl cert: %v", server.Ssl.Cert)
+		err = t.Server.SetSSL(server.Ssl.Cert, server.Ssl.Key)
+		if err != nil {
+			logger.Error("failed to set ssl cert: %v", colors.Red(err))
+			return
 		}
 	}
 
@@ -129,7 +154,7 @@ func (t *Teamserver) Profile(path string) error {
 	err = t.profile.Parse(path)
 	if err != nil {
 		logger.SetStdOut(os.Stderr)
-		logger.Error("Profile error: %v", colors.Red(err))
+		logger.Error("profile parsing error: %v", colors.Red(err))
 		return err
 	}
 

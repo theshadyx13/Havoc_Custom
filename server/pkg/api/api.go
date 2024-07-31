@@ -3,6 +3,7 @@ package api
 import (
 	"Havoc/pkg/cert"
 	"Havoc/pkg/logger"
+	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 
@@ -43,6 +44,13 @@ type teamserver interface {
 
 type ServerApi struct {
 	Engine *gin.Engine
+
+	// ssl structure containing the path to
+	// the generated ssl cert and key file
+	ssl struct {
+		cert string
+		key  string
+	}
 
 	// teamserver interface
 	// to interact with some functions to
@@ -119,11 +127,9 @@ func (api *ServerApi) Start(host, port, certsPath string, finished *chan bool) {
 	// write the cert key path to disk
 	err = os.WriteFile(keyPath, Key, 0644)
 	if err != nil {
-		logger.Error("Couldn't save server cert file: " + err.Error())
+		logger.Error("couldn't save server cert file: " + err.Error())
 		return
 	}
-
-	logger.Debug("certPath: %v", certPath)
 
 	// start the api server
 	if err = api.Engine.RunTLS(host+":"+port, certPath, keyPath); err != nil {
@@ -133,6 +139,53 @@ func (api *ServerApi) Start(host, port, certsPath string, finished *chan bool) {
 
 	// signal that we finished
 	*finished <- true
+}
+
+func (api *ServerApi) GenerateSSL(host, certsPath string) (string, string, error) {
+	var (
+		certPath = certsPath + "/server.cert"
+		keyPath  = certsPath + "/server.key"
+		err      error
+		Cert     []byte
+		Key      []byte
+	)
+
+	// generate cert and key based on host
+	Cert, Key, err = cert.HTTPSGenerateRSACertificate(host)
+	if err != nil {
+		logger.Error("failed to generate server certificates: " + err.Error())
+		os.Exit(0)
+	}
+
+	// write cert file to disk
+	err = os.WriteFile(certPath, Cert, 0644)
+	if err != nil {
+		return "", "", errors.New("couldn't save server cert file: " + err.Error())
+	}
+
+	// write the cert key path to disk
+	err = os.WriteFile(keyPath, Key, 0644)
+	if err != nil {
+		return "", "", errors.New("couldn't save server cert file: " + err.Error())
+	}
+
+	return certPath, keyPath, nil
+}
+
+func (api *ServerApi) SetSSL(certPath, keyPath string) error {
+
+	if _, err := os.Stat(certPath); os.IsNotExist(err) {
+		return err
+	}
+
+	if _, err := os.Stat(keyPath); os.IsNotExist(err) {
+		return err
+	}
+
+	api.ssl.cert = certPath
+	api.ssl.key = keyPath
+
+	return nil
 }
 
 // login endpoint for the client to log in

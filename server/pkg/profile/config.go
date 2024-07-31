@@ -3,7 +3,6 @@ package profile
 import (
 	"Havoc/pkg/logger"
 	"errors"
-	"reflect"
 	"strconv"
 )
 
@@ -11,6 +10,11 @@ type Server struct {
 	Host    string
 	Port    string
 	Plugins []string
+
+	Ssl struct {
+		Cert string
+		Key  string
+	}
 }
 
 type Operator struct {
@@ -21,10 +25,13 @@ type Operator struct {
 func (p *Profile) sanityCheck() error {
 	var (
 		data      map[string]any
+		cert      map[string]any
 		operators []any
 		val       any
 		ok        bool
 	)
+
+	logger.Debug("%v", p.config)
 
 	if data, ok = p.config["server"].(map[string]any); ok {
 
@@ -52,7 +59,6 @@ func (p *Profile) sanityCheck() error {
 		}
 
 		if val, ok = data["plugins"]; ok {
-			logger.Debug("%v", reflect.TypeOf(val))
 			switch val.(type) {
 			case []any:
 				for i := range val.([]any) {
@@ -66,6 +72,26 @@ func (p *Profile) sanityCheck() error {
 				break
 			default:
 				return errors.New("invalid type: server plugins is not string array")
+			}
+		}
+
+		if cert, ok = data["ssl-cert"].(map[string]any); ok {
+			if val, ok = cert["cert"]; ok {
+				switch val.(type) {
+				case string:
+					break
+				default:
+					return errors.New("invalid type: ssl-cert cert is not string")
+				}
+			}
+
+			if val, ok = cert["key"]; ok {
+				switch val.(type) {
+				case string:
+					break
+				default:
+					return errors.New("invalid type: ssl-cert key is not string")
+				}
 			}
 		}
 
@@ -99,6 +125,8 @@ func (p *Profile) sanityCheck() error {
 				return errors.New("invalid type: operator password is not set")
 			}
 		}
+	} else {
+		return errors.New("no operator defined")
 	}
 
 	return nil
@@ -113,10 +141,10 @@ func (p *Profile) Server() (Server, error) {
 		host    string
 		port    string
 		plugins []string
+		cert    = map[string]any{"cert": "", "key": ""}
 	)
 
 	if server, ok = p.config["server"].(map[string]any); ok {
-
 		if val, ok = server["host"]; ok {
 			switch val.(type) {
 			case string:
@@ -130,7 +158,6 @@ func (p *Profile) Server() (Server, error) {
 		}
 
 		if val, ok = server["port"]; ok {
-
 			switch val.(type) {
 			case int64:
 				port = strconv.Itoa(int(val.(int64)))
@@ -143,7 +170,6 @@ func (p *Profile) Server() (Server, error) {
 		}
 
 		if val, ok = server["plugins"]; ok {
-			logger.Debug("%v", reflect.TypeOf(val))
 			switch val.(type) {
 			case []any:
 				for i := range val.([]any) {
@@ -161,6 +187,10 @@ func (p *Profile) Server() (Server, error) {
 			}
 		}
 
+		if val, ok = server["ssl-cert"].(map[string]any); ok {
+			cert = val.(map[string]any)
+		}
+
 	} else {
 		return Server{}, errors.New("no server defined")
 	}
@@ -169,6 +199,10 @@ func (p *Profile) Server() (Server, error) {
 		Host:    host,
 		Port:    port,
 		Plugins: plugins,
+		Ssl: struct {
+			Cert string
+			Key  string
+		}{Cert: cert["cert"].(string), Key: cert["key"].(string)},
 	}, nil
 }
 

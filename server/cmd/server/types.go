@@ -32,12 +32,9 @@ type HavocAgent struct {
 }
 
 type serverFlags struct {
-	Profile  string
-	Verbose  bool
-	Debug    bool
-	DebugDev bool
-	SendLogs bool
-	Default  bool
+	Profile string
+	Debug   bool
+	Default bool
 }
 
 type TeamserverFlags struct {
