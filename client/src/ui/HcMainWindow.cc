@@ -63,6 +63,7 @@ HcMainWindow::HcMainWindow() {
     ButtonAgents = new HavocButton( SideBarWidget );
     ButtonAgents->setObjectName( QString::fromUtf8( "SideButtonAgents" ) );
     ButtonAgents->setMinimumSize( QSize( 0, 50 ) );
+    ButtonAgents->setMinimumSize( QSize( 0, 50 ) );
 
     ButtonListeners = new HavocButton( SideBarWidget );
     ButtonListeners->setObjectName( QString::fromUtf8( "SideButtonListeners" ) );
@@ -225,7 +226,9 @@ auto HcMainWindow::switchPageSettings() -> void {
 
 HavocButton::HavocButton(
     QWidget *w
-) : QPushButton( w ) {}
+) : QPushButton( w ) {
+    setFocusPolicy( Qt::NoFocus );
+}
 
 auto HavocButton::setUsed(
     bool state

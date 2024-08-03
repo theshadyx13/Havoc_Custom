@@ -202,4 +202,8 @@ Q_SIGNALS:
 /* a global Havoc app instance */
 extern HavocClient* Havoc;
 
+auto HttpErrorToString(
+    const httplib::Error& error
+) -> std::optional<std::string>;
+
 #endif //HAVOCCLIENT_HAVOC_H

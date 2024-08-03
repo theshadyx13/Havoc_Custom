@@ -14,6 +14,7 @@ HcPagePlugins::HcPagePlugins()
     TabWidget->setObjectName( "TabWidget" );
     TabWidget->setProperty( "HcPageTab", "true" );
     TabWidget->tabBar()->setProperty( "HcPageTab", "true" );
+    TabWidget->setFocusPolicy( Qt::NoFocus );
 
     TabPluginManager = new QWidget();
     TabPluginManager->setObjectName( "TabPluginManager" );
@@ -60,16 +61,13 @@ HcPagePlugins::HcPagePlugins()
     TablePluginsWidget->setFocusPolicy( Qt::NoFocus );
 
     PyConsole = new HcPyConsole( splitter );
-    PyConsole->setObjectName( "PyConsole" );
-    PyConsole->setInputLabel( ">>>" );
-    PyConsole->setBottomLabel( "[Python Interpreter]" );
 
     splitter->addWidget( TablePluginsWidget );
     splitter->addWidget( PyConsole );
 
-    TabPluginStore = new QWidget();
+    TabPluginStore = new HcStoreWidget();
     TabPluginStore->setObjectName( "TabPluginStore" );
-
+    
     gridLayout_2->addWidget( ButtonLoad, 0, 0, 1, 1 );
     gridLayout_2->addItem( horizontalSpacer, 0, 1, 1, 1 );
     gridLayout_2->addWidget( LabelLoadedPlugins, 0, 2, 1, 1 );
@@ -79,33 +77,45 @@ HcPagePlugins::HcPagePlugins()
     gridLayout->addWidget( TabWidget, 0, 0, 1, 1 );
 
     TabWidget->addTab( TabPluginManager, "Manager" );
-    TabWidget->addTab( TabPluginStore,   "Store"   );
+    TabWidget->addTab( TabPluginStore, "Store" );
 
     retranslateUi();
 
     //
     // signals
     //
-    QObject::connect( this, & HcPagePlugins::SignalConsoleWrite, PyConsole, & HcPyConsole::appendConsole );
+    QObject::connect( this, & HcPagePlugins::SignalConsoleWrite, PyConsole, & HcPyConsole::append );
 
     QObject::connect( ButtonLoad, &QPushButton::clicked, this, [&] () {
-        auto FileDialog = QFileDialog();
-        auto Filename   = QUrl();
-        auto exception  = std::string();
+        auto dialog    = QFileDialog();
+        auto plugin    = QUrl();
+        auto exception = std::string();
+
+        dialog.setStyleSheet( Havoc->getStyleSheet() );
+        dialog.setDirectory( QDir::homePath() );
 
         if ( LoadCallback.has_value() ) {
-            if ( FileDialog.exec() == QFileDialog::Accepted ) {
-                Filename = FileDialog.selectedUrls().value( 0 ).toLocalFile();
-                if ( ! Filename.toString().isNull() ) {
+            if ( dialog.exec() == QFileDialog::Accepted ) {
+                plugin = dialog.selectedUrls().value( 0 ).toLocalFile();
+                if ( ! plugin.toString().isNull() ) {
                     try {
                         py11::gil_scoped_acquire gil;
-                        LoadCallback.value()( py11::str( Filename.toString().toStdString() ) );
+                        LoadCallback.value()( py11::str( plugin.toString().toStdString() ) );
                     } catch ( py11::error_already_set &eas ) {
                         exception = eas.what();
                     }
 
                     if ( ! exception.empty() ) {
-                        PyConsole->appendConsole( exception.c_str() );
+                        //
+                        // print it to the python console
+                        //
+                        PyConsole->append( exception.c_str() );
+
+                        //
+                        // print it to the terminal console
+                        // as well
+                        //
+                        spdlog::error( "python callstack: \n{}", exception );
                     }
                 }
             }
@@ -147,19 +157,8 @@ auto HcPagePlugins::LoadScript(
 
 HcPyConsole::HcPyConsole(
     QWidget* parent
-) : HcConsole( parent ) {}
-
-auto HcPyConsole::inputEnter() -> void
-{
-    auto input = Input->text().toStdString();
-
-    Input->clear();
-
-    if ( input.empty() ) {
-        return;
-    }
-
-    appendConsole( ( ">>> " + input ).c_str() );
-
-    // emit Havoc->Gui->PageScripts->SignalScriptEval( input );
+) : QTextEdit( parent ) {
+    setObjectName( "HcPyConsole" );
+    setReadOnly( true );
+    setProperty( "HcConsole", "true" );
 }

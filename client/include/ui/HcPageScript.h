@@ -14,18 +14,17 @@
 #include <QtWidgets/QWidget>
 
 #include <ui/HcConsole.h>
+#include <ui/HcStoreWidget.h>
 
 QT_BEGIN_NAMESPACE
 
-class HcPyConsole : public HcConsole {
+class HcPyConsole : public QTextEdit {
     Q_OBJECT
 
 public:
     explicit HcPyConsole(
         QWidget* parent = nullptr
     );
-
-    auto inputEnter() -> void override;
 };
 
 class HcPagePlugins : public QWidget
@@ -33,17 +32,17 @@ class HcPagePlugins : public QWidget
 Q_OBJECT
 
 public:
-    QGridLayout*  gridLayout         = nullptr;
-    QGridLayout*  gridLayout_2       = nullptr;
-    QSplitter*    splitter           = nullptr;
-    QSpacerItem*  horizontalSpacer   = nullptr;
-    QTabWidget*   TabWidget          = nullptr;
-    QWidget*      TabPluginManager   = nullptr;
-    QPushButton*  ButtonLoad         = nullptr;
-    QLabel*       LabelLoadedPlugins = nullptr;
-    QTableWidget* TablePluginsWidget = nullptr;
-    HcPyConsole*  PyConsole          = nullptr;
-    QWidget*      TabPluginStore     = nullptr;
+    QGridLayout*   gridLayout         = nullptr;
+    QGridLayout*   gridLayout_2       = nullptr;
+    QSplitter*     splitter           = nullptr;
+    QSpacerItem*   horizontalSpacer   = nullptr;
+    QTabWidget*    TabWidget          = nullptr;
+    QWidget*       TabPluginManager   = nullptr;
+    QPushButton*   ButtonLoad         = nullptr;
+    QLabel*        LabelLoadedPlugins = nullptr;
+    QTableWidget*  TablePluginsWidget = nullptr;
+    HcPyConsole*   PyConsole          = nullptr;
+    HcStoreWidget* TabPluginStore     = nullptr;
 
     std::optional<py11::object> LoadCallback = {};
 

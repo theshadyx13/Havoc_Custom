@@ -131,17 +131,30 @@ QGroupBox {
 }
 
 QLineEdit, QDateTimeEdit {
-    border-radius: 2px;
-    padding: 2px 6px 2px 6px;
+    padding: 4px 6px 4px 6px;
     background-color: #44475A;
     color: #f8f8f2;
+    border-radius: 0;
+    border:  1px solid #282a36;
+}
+
+QLineEdit[HcLineEdit="dark"] {
+    padding: 4px 6px 4px 6px;
+    background-color: #282a36;
+    color: #f8f8f2;
+    border-radius: 0;
+    border:  1px solid #282a36;
+}
+
+QLineEdit:focus {
+    border: 1px solid #6272a4;
 }
 
 QLineEdit[HcLineEdit="true"] {
-    border-radius: 0px;
+    border-radius: 0;
     padding: 2px 6px 2px 0;
     border:  1px solid #6272a4;
-    background-color: #44475A;
+    background-color: #282a36;
     color: #f8f8f2;
     border-left-color: transparent;
 }
@@ -158,6 +171,20 @@ QComboBox[HcLineEdit="true"] {
 QLabel[HcLineEdit="true"] {
     border:  1px solid #6272a4;
     padding: 2px 6px 2px 6px;
+    background-color: #44475A;
+    font-weight: bold;
+}
+
+QLabel[HcLabelNamed="title"] {
+    border: 1px solid #6272a4;
+    padding: 2px 6px 2px 6px;
+    background-color: #44475A;
+    font-weight: bold;
+}
+
+QLabel[HcLabelNamed="text"] {
+    border:  1px solid #6272a4;
+    padding: 2px 6px 2px 6px;
     background-color: #282a36;
     font-weight: bold;
 }
@@ -172,15 +199,46 @@ QLabel {
 }
 
 QLabel[HcLabelDisplay="true"] {
-    border-radius: 2px;
+    border-radius: 1px;
     border:  1px solid #6272a4;
     padding: 2px 6px 2px 6px;
     background-color: #282a36;
     font-weight: bold;
 }
 
+QLabel[HcLabelDisplay="green"] {
+    border-radius: 1px;
+    border:  1px solid #44475A;
+    padding: 2px 6px 2px 6px;
+    background-color: #313342;
+    font-weight: bold;
+    color: #50FA7B;
+}
+
+QLabel[HcLabelDisplay="tag"] {
+    border-radius: 3px;
+    border: 1px solid #44475A;
+    padding: 2px 6px 2px 6px;
+    background-color: #282a36;
+    font-weight: bold;
+    color: #F8F8F2;
+}
+
+QListWidget::item:selected {
+    background: #44475A;
+}
+
+QLabel[HcLabelLink=true] {
+    color: #8BE9FD;
+}
+
 QTextEdit {
     background-color: #44475A;
+    color: #f8f8f2;
+}
+
+QListWidget[HcListWidget="dark"] {
+    background-color: #282A36;
     color: #f8f8f2;
 }
 
@@ -257,7 +315,11 @@ QToolButton::menu-indicator[HcButton="true"] {
 }
 
 QPushButton[HcButtonPurple="true"] {
-    background-color: #BD93F9;
+    background-color: #b180ff;
+}
+
+QPushButton[HcButtonGreen="true"] {
+    background-color: #50FA7B;
 }
 
 QToolButton:pressed, QPushButton:pressed[HcButton="true"] {

@@ -68,6 +68,7 @@ set( HAVOC_INCLUDE
         include/ui/HcLineEdit.h
         include/ui/HcComboBox.h
         include/ui/HcTheme.h
+        include/ui/HcStoreWidget.h
 )
 
 ##
@@ -97,6 +98,7 @@ set( HAVOC_SRC
         src/ui/HcLineEdit.cc
         src/ui/HcComboBox.cc
         src/ui/HcTheme.cc
+        src/ui/HcStoreWidget.cc
 
         src/api/HcEngine.cc
         src/api/HcCore.cc

@@ -9,7 +9,7 @@ class HcPyScriptMngrStdOutErrHandler:
         return
 
     def write( self, data ):
-        core.HcIoConsoleWriteStdOut( data )
+        core.HcIoConsoleWriteStdOut( data.encode( 'utf-8' ) )
 
 ##
 ## Callback function once the user decides
@@ -19,8 +19,7 @@ class HcPyScriptMngrStdOutErrHandler:
 def _HcPyScriptLoad(
     _script_path: str
 ) -> None:
-
-    print( f"[*] trying to load script path: {_script_path}" )
+    print( f"[*] loading script: {_script_path}" )
 
     script_name = os.path.splitext( os.path.basename( _script_path ) )[ 0 ]
     module_name = "HcScript." + script_name
