@@ -13,7 +13,7 @@ import (
 
 var CobraServer = &cobra.Command{
 	Use:          "server",
-	Short:        "teamserver command",
+	Short:        "team server command",
 	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		var (

@@ -15,7 +15,7 @@ var (
 		Use:          "havoc",
 		Short:        fmt.Sprintf("Havoc Framework [Version: %v] [CodeName: %v]", server.Version, server.CodeName),
 		SilenceUsage: true,
-		RunE:         teamserverFunc,
+		RunE:         serverRun,
 	}
 
 	flags server.TeamserverFlags
@@ -34,10 +34,9 @@ func init() {
 	// add commands to the teamserver cli
 	HavocCli.Flags().SortFlags = false
 	HavocCli.AddCommand(CobraServer)
-	HavocCli.AddCommand(CobraClient)
 }
 
-func teamserverFunc(cmd *cobra.Command, args []string) error {
+func serverRun(cmd *cobra.Command, args []string) error {
 	startMenu()
 
 	if len(os.Args) <= 2 {
@@ -52,8 +51,7 @@ func teamserverFunc(cmd *cobra.Command, args []string) error {
 }
 
 func startMenu() {
-	fmt.Println(colors.Red("              _______           _______  _______ \n    │\\     /│(  ___  )│\\     /│(  ___  )(  ____ \\\n    │ )   ( ││ (   ) ││ )   ( ││ (   ) ││ (    \\/\n    │ (___) ││ (___) ││ │   │ ││ │   │ ││ │      \n    │  ___  ││  ___  │( (   ) )│ │   │ ││ │      \n    │ (   ) ││ (   ) │ \\ \\_/ / │ │   │ ││ │      \n    │ )   ( ││ )   ( │  \\   /  │ (___) ││ (____/\\\n    │/     \\││/     \\│   \\_/   (_______)(_______/"))
-	fmt.Println()
-	fmt.Println("  	", colors.Red("pwn"), "and", colors.Blue("elevate"), "until it's done")
-	fmt.Println()
+	fmt.Print(colors.Red("              _______           _______  _______ \n    │\\     /│(  ___  )│\\     /│(  ___  )(  ____ \\\n    │ )   ( ││ (   ) ││ )   ( ││ (   ) ││ (    \\/\n    │ (___) ││ (___) ││ │   │ ││ │   │ ││ │      \n    │  ___  ││  ___  │( (   ) )│ │   │ ││ │      \n    │ (   ) ││ (   ) │ \\ \\_/ / │ │   │ ││ │      \n    │ )   ( ││ )   ( │  \\   /  │ (___) ││ (____/\\\n    │/     \\││/     \\│   \\_/   (_______)(_______/"))
+	fmt.Printf(" by %v\n\n", colors.BoldBlue("@C5pider"))
+	fmt.Println("  	", colors.Red("pwn"), "and", colors.Blue("elevate"), "until it's done\n")
 }

@@ -77,14 +77,14 @@ func (t *Teamserver) Start() {
 			return
 		}
 
-		logger.Info("generated ssl cert: %v", certPath)
+		logger.Info("%v ssl cert: %v", colors.BoldGreen("[auto]"), certPath)
 		err = t.Server.SetSSL(certPath, keyPath)
 		if err != nil {
 			logger.Error("failed to set ssl cert: %v", colors.Red(err))
 			return
 		}
 	} else {
-		logger.Info("using defined ssl cert: %v", server.Ssl.Cert)
+		logger.Info("%v ssl cert: %v", colors.BoldYellow("[custom]"), server.Ssl.Cert)
 		err = t.Server.SetSSL(server.Ssl.Cert, server.Ssl.Key)
 		if err != nil {
 			logger.Error("failed to set ssl cert: %v", colors.Red(err))
