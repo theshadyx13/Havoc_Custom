@@ -18,7 +18,6 @@ public:
         int         type,
         const QUrl& name
     ) override {
-        spdlog::debug( "name = {}", name.toString().toStdString() );
         if ( type == QTextDocument::ImageResource ) {
             //
             // is remote/link image resource
