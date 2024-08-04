@@ -80,7 +80,7 @@ HcPageListener::HcPageListener() {
 }
 
 auto HcPageListener::retranslateUi() -> void {
-    setStyleSheet( Havoc->getStyleSheet() );
+    setStyleSheet( Havoc->StyleSheet() );
 
     setWindowTitle( "PageListener" );
     ActiveLabel->setText( "Active: 0" );

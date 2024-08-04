@@ -109,6 +109,11 @@ auto HavocClient::Main(
         return;
     }
 
+    if ( ! SetupDirectory() ) {
+        spdlog::error( "failed to setup configuration directory. aborting" );
+        return;
+    }
+
     /* create http client */
     auto Http = httplib::Client( "https://" + data[ "host" ].get<std::string>() + ":" + data[ "port" ].get<std::string>() );
     Http.enable_server_certificate_verification( false );
@@ -194,8 +199,8 @@ auto HavocClient::Main(
     //
     Gui = new HcMainWindow;
     Gui->renderWindow();
-    Gui->setStyleSheet( getStyleSheet() );
-    Theme.setStyleSheet( getStyleSheet() );
+    Gui->setStyleSheet( StyleSheet() );
+    Theme.setStyleSheet( StyleSheet() );
 
     //
     // setup Python thread
@@ -222,7 +227,7 @@ auto HavocClient::Main(
     // set up the event thread and connect to the
     // server and dispatch all the incoming events
     //
-    setupThreads();
+    SetupThreads();
 
     QApplication::exec();
 
@@ -305,7 +310,7 @@ auto HavocClient::eventHandle(
     }
 }
 
-auto HavocClient::getStyleSheet(
+auto HavocClient::StyleSheet(
     void
 ) -> QByteArray {
     if ( QFile::exists( "theme.css" ) ) {
@@ -347,7 +352,7 @@ auto HavocClient::Protocols() -> std::vector<std::string> {
     return names;
 }
 
-auto HavocClient::setupThreads() -> void {
+auto HavocClient::SetupThreads() -> void {
     //
     // now set up the event thread and dispatcher
     //
@@ -389,8 +394,6 @@ auto HavocClient::AddBuilder(
         .name   = name,
         .object = builder
     } );
-
-    // Havoc->Gui->PagePayload->AddBuilder( name, builder );
 }
 
 auto HavocClient::BuilderObject(
@@ -544,5 +547,36 @@ auto HavocClient::CallbackObject(
     }
 
     return std::nullopt;
+}
+
+auto HavocClient::SetupDirectory(
+    void
+) -> bool {
+    auto havoc_dir   = QDir( QDir::homePath() + "/.havoc" );
+    auto client_dir  = QDir( havoc_dir.path() + "/client" );
+    auto config_path = QFile( client_dir.path() + "/config.toml" );
+
+    if ( ! havoc_dir.exists() ) {
+        if ( ! havoc_dir.mkpath( "." ) ) {
+            return false;
+        }
+    }
+
+    if ( ! client_dir.exists() ) {
+        if ( ! client_dir.mkpath( "." ) ) {
+            return false;
+        }
+    }
+
+    config_path.open( QIODevice::ReadWrite );
+
+    try {
+        Config = toml::parse( config_path.fileName().toStdString() );
+    } catch ( std::exception& e ) {
+        spdlog::error( "failed to parse toml configuration: {}", e.what() );
+        return false;
+    }
+
+    return true;
 }
 

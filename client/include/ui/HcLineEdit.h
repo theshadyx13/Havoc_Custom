@@ -7,6 +7,19 @@
 #include <QHBoxLayout>
 #include <QtUiPlugin/QDesignerExportWidget>
 
+class HcLabelNamed : public QWidget {
+    QHBoxLayout* Layout = { 0 };
+public:
+    QLabel* Label = { 0 };
+    QLabel* Text  = { 0 };
+
+    explicit HcLabelNamed(
+            const QString& title,
+            const QString& text,
+            QWidget*       parent = nullptr
+    );
+};
+
 class HcLineEdit : public QWidget {
     QHBoxLayout* Layout = nullptr;
     QLabel*      Label  = nullptr;

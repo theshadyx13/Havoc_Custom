@@ -7,6 +7,7 @@
 /* std libraries */
 #include <memory>
 #include <format>
+#include <unordered_map>
 
 /* external libs */
 #include <toml.hpp>

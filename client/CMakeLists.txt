@@ -48,6 +48,7 @@ set( HAVOC_INCLUDE
         include/core/HcEventWorker.h
         include/core/HcAgent.h
         include/core/HcHeartbeatWorker.h
+        include/core/HcStorePluginWorker.h
 
         include/api/Engine.h
         include/api/HcCore.h
@@ -83,6 +84,7 @@ set( HAVOC_SRC
         src/core/HcEventWorker.cc
         src/core/HcAgent.cc
         src/core/HcHeartbeatWorker.cc
+        src/core/HcStorePluginWorker.cc
 
         src/ui/HcConnectDialog.cc
         src/ui/HcMainWindow.cc

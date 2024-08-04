@@ -131,7 +131,7 @@ HcPageAgent::HcPageAgent(
 HcPageAgent::~HcPageAgent() = default;
 
 auto HcPageAgent::retranslateUi() -> void {
-    setStyleSheet( Havoc->getStyleSheet() );
+    setStyleSheet( Havoc->StyleSheet() );
 
     AgentDisplayerElevated->setText( "Elevated: 0" );
     AgentDisplayerSessions->setText( "Sessions: 0" );

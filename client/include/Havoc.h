@@ -29,6 +29,8 @@ class HcMainWindow;
 
 class HavocClient : public QWidget {
 
+    using toml_t = toml::basic_value<toml::discard_comments, std::unordered_map, std::vector>;
+
     struct NamedObject {
         std::string  name;
         py11::object object;
@@ -66,8 +68,10 @@ class HavocClient : public QWidget {
     std::vector<NamedObject>  builders   = {};
     std::vector<NamedObject>  agents     = {};
     std::vector<NamedObject>  callbacks  = {};
+
 public:
-    HcMainWindow* Gui = nullptr;
+    HcMainWindow* Gui    = nullptr;
+    toml_t        Config = {};
     HcTheme       Theme;
 
     struct {
@@ -94,13 +98,16 @@ public:
     /* get server connection token */
     auto Token() const -> std::string;
 
-    auto getStyleSheet() -> QByteArray;
+    static auto StyleSheet() -> QByteArray;
 
-    auto setupThreads() -> void;
+    auto SetupThreads() -> void;
+
+    auto SetupDirectory() -> bool;
 
     //
     // Callbacks
     //
+
     auto Callbacks() -> std::vector<std::string>;
 
     auto AddCallbackObject(
@@ -119,6 +126,7 @@ public:
     //
     // Listeners
     //
+
     auto Listeners() -> std::vector<std::string>;
 
     auto ListenerObject(
@@ -132,6 +140,7 @@ public:
     //
     // Protocols
     //
+
     auto Protocols() -> std::vector<std::string>;
 
     auto AddProtocol(

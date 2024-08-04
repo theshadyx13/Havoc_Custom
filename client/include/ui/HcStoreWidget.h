@@ -14,39 +14,13 @@
 #include <QtWidgets/QWidget>
 #include <QtWidgets/QStackedWidget>
 
-class HcLabelNamed : public QWidget {
-    QHBoxLayout* Layout = { 0 };
-public:
-    QLabel* Label = { 0 };
-    QLabel* Text  = { 0 };
-
-    explicit HcLabelNamed(
-        const QString& title,
-        const QString& text,
-        QWidget*       parent = nullptr
-    );
-};
-
-struct PluginView {
-    std::string repo;
-    json        object;
-    std::string plugin_id;
-    bool        installed;
-
-    QListWidgetItem* ListItem;
-    QWidget*         ListWidget;
-    QWidget*         Widget;
-    QGridLayout*     GridLayout;
-    QLabel*          LabelName;
-    HcLabelNamed*    LabelAuthor;
-    QLabel*          LabelDescription;
-    QTextEdit*       TextReadme;
-    QPushButton*     ButtonInstall;
-    QSpacerItem*     Spacers[ 3 ];
-    QHBoxLayout*     LayoutCategories;
-};
+#include <ui/HcLineEdit.h>
+#include <core/HcStorePluginWorker.h>
 
 class HcStoreWidget : public QWidget {
+    Q_OBJECT
+
+private:
     QGridLayout*             gridLayout_3;
     QSplitter*               splitter;
     QGridLayout*             gridLayout;
@@ -56,16 +30,18 @@ class HcStoreWidget : public QWidget {
     QStackedWidget*          PluginViewStack;
     std::vector<PluginView*> Plugins;
 
+    struct {
+        QThread*             Thread;
+        HcStorePluginWorker* Worker;
+    } PluginWorker;
+
 public:
     explicit HcStoreWidget( QWidget* parent = nullptr );
 
     auto AddPlugin(
-        const QString& repo
-    ) -> void;
-
-    auto AddPluginObject(
+        const std::string& parent,
         const std::string& repo,
-        const json&        object
+        PluginView*        plugin
     ) -> void;
 
     auto AddPluginToMarketList(
@@ -84,6 +60,15 @@ public:
     auto PluginCheckInstalled(
         const PluginView* plugin
     ) -> bool;
+
+    static auto HttpGet(
+        const std::string& url
+    ) -> std::optional<std::string>;
+
+signals:
+    auto RegisterRepository(
+        const std::string& repository
+    ) -> void;
 };
 
 #endif //HAVOCCLIENT_HCSTOREWIDGET_H

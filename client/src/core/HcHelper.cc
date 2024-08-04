@@ -8,7 +8,7 @@ auto Helper::MessageBox(
 ) -> void {
     auto box = QMessageBox();
 
-    box.setStyleSheet( Havoc->getStyleSheet() );
+    box.setStyleSheet( Havoc->StyleSheet() );
     box.setWindowTitle( title.c_str() );
     box.setText( text.c_str() );
     box.setIcon( icon );

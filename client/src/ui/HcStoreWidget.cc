@@ -18,6 +18,7 @@ public:
         int         type,
         const QUrl& name
     ) override {
+        spdlog::debug( "name = {}", name.toString().toStdString() );
         if ( type == QTextDocument::ImageResource ) {
             //
             // is remote/link image resource
@@ -81,7 +82,7 @@ public:
         LabelDescription->setText( description );
         LabelName->setText( std::format( "<p><span style=\" font-size:12pt;\">{}</span></p>", name.toStdString() ).c_str() );
 
-        setInstalled();
+        setNotInstalled();
 
         QMetaObject::connectSlotsByName( this );
     }
@@ -123,31 +124,6 @@ public:
     }
 };
 
-HcLabelNamed::HcLabelNamed(
-    const QString& title,
-    const QString& text,
-    QWidget*       parent
-) : QWidget( parent ) {
-    Layout = new QHBoxLayout( this );
-    Layout->setSpacing( 0 );
-    Layout->setContentsMargins( 0, 0, 0, 0 );
-
-    Label = new QLabel;
-    Label->setFixedHeight( 26 );
-    Label->setProperty( "HcLabelNamed", "title" );
-    Label->setText( title );
-
-    Text = new QLabel;
-    Text->setFixedHeight( 26 );
-    Text->setProperty( "HcLabelNamed", "text" );
-    Text->setText( text );
-
-    Layout->addWidget( Label );
-    Layout->addWidget( Text );
-
-    setLayout( Layout );
-}
-
 HcStoreWidget::HcStoreWidget( QWidget* parent ) : QWidget( parent ) {
     setObjectName( QString::fromUtf8( "HcStoreWidget" ) );
 
@@ -185,46 +161,31 @@ HcStoreWidget::HcStoreWidget( QWidget* parent ) : QWidget( parent ) {
 
     gridLayout_3->addWidget( splitter, 0, 0, 1, 1 );
 
+    PluginWorker.Thread = new QThread;
+    PluginWorker.Worker = new HcStorePluginWorker;
+    PluginWorker.Worker->moveToThread( PluginWorker.Thread );
+
+    connect( PluginWorker.Thread, &QThread::started, PluginWorker.Worker, &HcStorePluginWorker::run );
+    connect( this, &HcStoreWidget::RegisterRepository, PluginWorker.Worker, &HcStorePluginWorker::RegisterRepository );
+    connect( PluginWorker.Worker, &HcStorePluginWorker::AddPlugin, this, &HcStoreWidget::AddPlugin );
+
     connect( MarketPlaceSearch, &QLineEdit::textEdited, this, &HcStoreWidget::QueryPluginMarket );
+    connect( MarketPlaceList, &QListWidget::itemClicked, this, [&]( QListWidgetItem* item ){
+        PluginViewStack->setCurrentIndex( item->listWidget()->row( item ) );
+    });
+
+    PluginWorker.Thread->start();
 
     QMetaObject::connectSlotsByName( this );
 }
 
 auto HcStoreWidget::AddPlugin(
-    const QString& repo
-) -> void {
-    auto client = httplib::Client( "https://raw.githubusercontent.com" );
-    auto result = httplib::Result();
-    auto object = json();
-
-    //
-    // send the request to our endpoint
-    //
-    result = client.Get( repo.toStdString() + "/main/plugin.json" );
-
-    if ( HttpErrorToString( result.error() ).has_value() ) {
-        spdlog::error( "AddPlugin error: failed to send plugin add request: {}", HttpErrorToString( result.error() ).value() );
-        return;
-    }
-
-    try {
-        if ( ( object = json::parse( result->body ) ).is_discarded() ) {
-            spdlog::error( "AddPlugin failed to parse plugin info of repo {}", repo.toStdString() );
-            return;
-        }
-
-        AddPluginObject( repo.toStdString(), object );
-    } catch ( std::exception& e ) {
-        spdlog::error( "AddPluginObject exception: {}", e.what() );
-    }
-}
-
-auto HcStoreWidget::AddPluginObject(
+    const std::string& parent,
     const std::string& repo,
-    const json&        object
+    PluginView*        plugin
 ) -> void {
     auto plugin_name = std::string();
-    auto plugin_id   = std::string();
+    auto project_url = repo;
     auto categories  = std::vector<std::string>();
     auto description = std::string();
     auto version     = std::string();
@@ -238,78 +199,54 @@ auto HcStoreWidget::AddPluginObject(
     // such as name, description, readme, categories, etc.
     //
 
-    if ( object.contains( "name" ) && object[ "name" ].is_string() ) {
-        plugin_name = object[ "name" ].get<std::string>();
+    if ( plugin->object.contains( "name" ) && plugin->object[ "name" ].is_string() ) {
+        plugin_name = plugin->object[ "name" ].get<std::string>();
     } else {
-        spdlog::error( "ViewPlugin error: failed to retrieve plugin name (either not found or not a string)" );
+        spdlog::error( "AddPlugin error: failed to retrieve plugin name (either not found or not a string)" );
         return;
     }
 
-    if ( object.contains( "plugin_id" ) && object[ "plugin_id" ].is_string() ) {
-        plugin_id = object[ "plugin_id" ].get<std::string>();
+    if ( plugin->object.contains( "description" ) && plugin->object[ "description" ].is_string() ) {
+        description = plugin->object[ "description" ].get<std::string>();
     } else {
-        spdlog::error( "ViewPlugin error: failed to retrieve plugin id (either not found or not a string)" );
+        spdlog::error( "AddPlugin error: failed to retrieve plugin description (either not found or not a string)" );
         return;
     }
 
-    if ( object.contains( "description" ) && object[ "description" ].is_string() ) {
-        description = object[ "description" ].get<std::string>();
+    if ( plugin->object.contains( "readme" ) && plugin->object[ "readme" ].is_string() ) {
+        readme = plugin->object[ "readme" ].get<std::string>();
     } else {
-        spdlog::error( "ViewPlugin error: failed to retrieve plugin description (either not found or not a string)" );
+        spdlog::error( "AddPlugin error: failed to retrieve plugin readme (either not found or not a string)" );
         return;
     }
 
-    if ( object.contains( "readme" ) || object.contains( "readme_path" ) ) {
-        if ( ! object.contains( "readme_path" ) && object.contains( "readme" ) && object[ "readme" ].is_string() ) {
-            readme = object[ "readme" ].get<std::string>();
-        } else if ( object.contains( "readme_path" ) && object[ "readme_path" ].is_string() ) {
-            auto client = httplib::Client( "https://raw.githubusercontent.com" );
-            auto result = httplib::Result();
-
-            result = client.Get( repo + "/main/" + object[ "readme_path" ].get<std::string>() );
-
-            if ( HttpErrorToString( result.error() ).has_value() ) {
-                spdlog::error( "ViewPlugin error: failed to send plugin readme request: {}", HttpErrorToString( result.error() ).value() );
-                return;
-            }
-
-            readme = result->body;
-        } else {
-            spdlog::error( "ViewPlugin error: failed to retrieve plugin readme (either not found or not a string)" );
-            return;
-        }
-    } else {
-        spdlog::error( "ViewPlugin error: failed to retrieve plugin readme name (not found)" );
-        return;
-    }
-
-    if ( object.contains( "author" ) && object[ "author" ].is_object() ) {
-        if ( object[ "author" ].get<json>().contains( "name" ) &&
-             object[ "author" ].get<json>()[ "name" ].is_string()
+    if ( plugin->object.contains( "author" ) && plugin->object[ "author" ].is_object() ) {
+        if ( plugin->object[ "author" ].get<json>().contains( "name" ) &&
+             plugin->object[ "author" ].get<json>()[ "name" ].is_string()
         ) {
-            author_name = object[ "author" ].get<json>()[ "name" ].get<std::string>();
+            author_name = plugin->object[ "author" ].get<json>()[ "name" ].get<std::string>();
         } else {
-            spdlog::error( "ViewPlugin error: failed to retrieve plugin author name (either not found or not a string)" );
+            spdlog::error( "AddPlugin error: failed to retrieve plugin author name (either not found or not a string)" );
             return;
         }
 
-        if ( object[ "author" ].get<json>().contains( "url" ) &&
-             object[ "author" ].get<json>()[ "url" ].is_string()
+        if ( plugin->object[ "author" ].get<json>().contains( "url" ) &&
+             plugin->object[ "author" ].get<json>()[ "url" ].is_string()
         ) {
-            author_url = object[ "author" ].get<json>()[ "url" ].get<std::string>();
+            author_url = plugin->object[ "author" ].get<json>()[ "url" ].get<std::string>();
         } else {
-            spdlog::error( "ViewPlugin error: failed to retrieve plugin author url (either not found or not a string)" );
+            spdlog::error( "AddPlugin error: failed to retrieve plugin author url (either not found or not a string)" );
             return;
         }
     } else {
-        spdlog::error( "ViewPlugin error: failed to retrieve plugin author (either not found or not an object)" );
+        spdlog::error( "AddPlugin error: failed to retrieve plugin author (either not found or not an object)" );
         return;
     }
 
-    if ( object.contains( "categories" ) && object[ "categories" ].is_array() ) {
-        for ( auto & category : object[ "categories" ].get<std::vector<json>>() ) {
+    if ( plugin->object.contains( "categories" ) && plugin->object[ "categories" ].is_array() ) {
+        for ( auto & category : plugin->object[ "categories" ].get<std::vector<json>>() ) {
             if ( ! category.is_string() ) {
-                spdlog::warn( "ViewPlugin warning: plugin category is not a string" );
+                spdlog::warn( "AddPlugin warning: plugin category is not a string" );
                 continue;
             }
 
@@ -320,13 +257,6 @@ auto HcStoreWidget::AddPluginObject(
     //
     // create the Qt objects
     //
-
-    auto plugin = new PluginView;
-
-    plugin->repo      = repo;
-    plugin->object    = object;
-    plugin->plugin_id = plugin_id;
-    plugin->installed = false;
 
     plugin->Widget = new QWidget( PluginViewStack );
     plugin->GridLayout = new QGridLayout( plugin->Widget );
@@ -351,6 +281,7 @@ auto HcStoreWidget::AddPluginObject(
 
     plugin->LabelName = new QLabel( plugin->Widget );
     plugin->LabelName->setObjectName( "PluginLabelName" );
+    plugin->LabelName->setOpenExternalLinks( true );
 
     plugin->TextReadme = new HcTextEdit( plugin->Widget );
     plugin->TextReadme->setObjectName( "PluginTextReadme" );
@@ -386,7 +317,7 @@ auto HcStoreWidget::AddPluginObject(
     // display the retrieved plugin information
     //
 
-    plugin->LabelName->setText( std::format( "<p><span style=\"font-size:18pt;\">{}</span></p>", plugin_name ).c_str() );
+    plugin->LabelName->setText( std::format( "<a href=\"{}\" style=\"color: #8BE9FD; text-decoration:none; font-size:18pt;\"><span>{}</span></a>", project_url, plugin_name ).c_str() );
     plugin->LabelDescription->setText( description.c_str() );
     plugin->TextReadme->setMarkdown( readme.c_str() );
 
@@ -408,6 +339,7 @@ auto HcStoreWidget::AddPluginObject(
     // back to the first plugin to be viewed
     //
 
+    MarketPlaceList->setCurrentRow( 0 );
     PluginViewStack->setCurrentIndex( 0 );
 }
 
@@ -486,3 +418,22 @@ auto HcStoreWidget::PluginQueryContainMeta(
 
     return false;
 }
+
+auto HcStoreWidget::HttpGet(
+    const std::string& url
+) -> std::optional<std::string> {
+    auto _url   = QUrl( url.c_str() );
+    auto client = httplib::Client( _url.scheme().toStdString() + "://" + _url.host().toStdString() );
+    auto result = httplib::Result();
+
+    result = client.Get( _url.path().toStdString() );
+
+    if ( HttpErrorToString( result.error() ).has_value() ) {
+        spdlog::error( "AddPlugin error: failed to send plugin add request: {}", HttpErrorToString( result.error() ).value() );
+        return std::nullopt;
+    }
+
+    return ( result->body );
+}
+
+

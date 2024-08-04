@@ -47,3 +47,28 @@ HcLineEdit::~HcLineEdit() {
 auto HcLineEdit::text() -> QString {
     return Input->text();
 };
+
+HcLabelNamed::HcLabelNamed(
+    const QString& title,
+    const QString& text,
+    QWidget*       parent
+) : QWidget( parent ) {
+    Layout = new QHBoxLayout( this );
+    Layout->setSpacing( 0 );
+    Layout->setContentsMargins( 0, 0, 0, 0 );
+
+    Label = new QLabel;
+    Label->setFixedHeight( 26 );
+    Label->setProperty( "HcLabelNamed", "title" );
+    Label->setText( title );
+
+    Text = new QLabel;
+    Text->setFixedHeight( 26 );
+    Text->setProperty( "HcLabelNamed", "text" );
+    Text->setText( text );
+
+    Layout->addWidget( Label );
+    Layout->addWidget( Text );
+
+    setLayout( Layout );
+}

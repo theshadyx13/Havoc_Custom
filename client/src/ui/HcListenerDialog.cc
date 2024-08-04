@@ -72,7 +72,7 @@ HcListenerDialog::HcListenerDialog() {
 }
 
 auto HcListenerDialog::retranslateUi() -> void {
-    setStyleSheet( Havoc->getStyleSheet() );
+    setStyleSheet( Havoc->StyleSheet() );
     setWindowTitle( "Listener" );
 
     ComboProtocol->Combo->clear();

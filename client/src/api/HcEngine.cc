@@ -106,7 +106,7 @@ PYBIND11_EMBEDDED_MODULE( _pyhavoc, m ) {
         } );
 
         ui.def( "HcUiGetStyleSheet", []() -> py11::str {
-            return ( Havoc->getStyleSheet().toStdString() );
+            return ( Havoc->StyleSheet().toStdString() );
         } );
 
         ui.def( "HcUiMessageBox", [](

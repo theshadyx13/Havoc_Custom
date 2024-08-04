@@ -127,7 +127,7 @@ HcConnectDialog::~HcConnectDialog() {
 
 void HcConnectDialog::retranslateUi() {
     setWindowTitle( QCoreApplication::translate( "HcConnectDialog", "Havoc Connect", nullptr ) );
-    setStyleSheet( Havoc->getStyleSheet() );
+    setStyleSheet( Havoc->StyleSheet() );
     LabelHavoc->setText( "<html><head/><body><p><span style=\" font-size:11pt;\">Havoc [ welcome back ]</span></p></body></html>" );
     ButtonConnect->setText( QCoreApplication::translate( "HcConnectDialog", "CONNECT", nullptr ) );
     ButtonAdd->setText( QCoreApplication::translate( "HcConnectDialog", "ADD", nullptr ) );

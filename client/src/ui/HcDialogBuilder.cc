@@ -100,7 +100,7 @@ HcDialogBuilder::~HcDialogBuilder() {
 auto HcDialogBuilder::retranslateUi() -> void {
     setWindowTitle( "Payload Builder" );
 
-    setStyleSheet( Havoc->getStyleSheet() );
+    setStyleSheet( Havoc->StyleSheet() );
     resize( 900, 880 );
 
     ComboPayload->addItem( "(no payload available)" );
@@ -374,7 +374,7 @@ auto HcDialogBuilder::PressedGenerate() -> void
                     }
                 }
 
-                dialog.setStyleSheet( Havoc->getStyleSheet() );
+                dialog.setStyleSheet( Havoc->StyleSheet() );
                 dialog.setDirectory( QDir::homePath() );
                 dialog.selectFile( name.c_str() );
                 dialog.setAcceptMode( QFileDialog::AcceptSave );

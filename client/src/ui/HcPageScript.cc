@@ -67,7 +67,19 @@ HcPagePlugins::HcPagePlugins()
 
     TabPluginStore = new HcStoreWidget();
     TabPluginStore->setObjectName( "TabPluginStore" );
-    
+
+    //
+    // register all specified repositories
+    //
+
+    if ( Havoc->Config.contains( "repository" ) ) {
+        for ( const auto& repository : toml::find<toml::array>( Havoc->Config, "repository" ) ) {
+            if ( repository.contains( "link" ) && repository.at( "link" ).is_string() ) {
+                emit TabPluginStore->RegisterRepository( toml::find<std::string>( repository, "link" ) );
+            }
+        }
+    };
+
     gridLayout_2->addWidget( ButtonLoad, 0, 0, 1, 1 );
     gridLayout_2->addItem( horizontalSpacer, 0, 1, 1, 1 );
     gridLayout_2->addWidget( LabelLoadedPlugins, 0, 2, 1, 1 );
@@ -91,7 +103,7 @@ HcPagePlugins::HcPagePlugins()
         auto plugin    = QUrl();
         auto exception = std::string();
 
-        dialog.setStyleSheet( Havoc->getStyleSheet() );
+        dialog.setStyleSheet( Havoc->StyleSheet() );
         dialog.setDirectory( QDir::homePath() );
 
         if ( LoadCallback.has_value() ) {
@@ -135,7 +147,7 @@ HcPagePlugins::HcPagePlugins()
 
 auto HcPagePlugins::retranslateUi() -> void {
     setWindowTitle( "PagePlugins" );
-    setStyleSheet( Havoc->getStyleSheet() );
+    setStyleSheet( Havoc->StyleSheet() );
     ButtonLoad->setText( "Load Plugin" );
     LabelLoadedPlugins->setText( "Loaded: 0" );
 }
