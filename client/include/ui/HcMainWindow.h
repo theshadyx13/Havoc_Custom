@@ -64,6 +64,12 @@ public:
     auto switchPageScripts() -> void;
     auto switchPageSettings() -> void;
 
+    auto MessageBox(
+        QMessageBox::Icon  icon,
+        const std::string& title,
+        const std::string& text
+    ) -> void;
+
 signals:
     auto signalBuildLog(
         const QString& text

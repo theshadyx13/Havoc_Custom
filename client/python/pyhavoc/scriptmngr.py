@@ -22,6 +22,7 @@ def _HcPyScriptLoad(
     print( f"[*] loading script: {_script_path}" )
 
     script_name = os.path.splitext( os.path.basename( _script_path ) )[ 0 ]
+
     module_name = "HcScript." + script_name
     script_spec = importlib.util.spec_from_file_location( module_name, _script_path )
     module      = importlib.util.module_from_spec( script_spec )

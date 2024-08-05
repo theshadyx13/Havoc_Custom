@@ -224,6 +224,21 @@ auto HcMainWindow::switchPageSettings() -> void {
     StackedWidget->setCurrentIndex( 4 );
 }
 
+auto HcMainWindow::MessageBox(
+    QMessageBox::Icon  icon,
+    const std::string& title,
+    const std::string& text
+) -> void {
+    auto message = QMessageBox();
+
+    message.setStyleSheet( HavocClient::StyleSheet() );
+    message.setWindowTitle( title.c_str() );
+    message.setText( text.c_str() );
+    message.setIcon( icon );
+
+    message.exec();
+}
+
 HavocButton::HavocButton(
     QWidget *w
 ) : QPushButton( w ) {

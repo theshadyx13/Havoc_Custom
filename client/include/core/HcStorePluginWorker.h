@@ -21,6 +21,8 @@
 struct PluginView {
     std::string parent;
     std::string repo;
+    std::string name;
+    QDir        plugin_dir;
     json        object;
 
     QListWidgetItem* ListItem;
@@ -52,11 +54,29 @@ public slots:
         const json&        object
     ) -> void;
 
+    auto PluginInstall(
+        PluginView* plugin
+    ) -> void;
+
 signals:
     auto AddPlugin(
         const std::string& parent,
         const std::string& repo,
         PluginView*        plugin
+    ) -> void;
+
+    auto PluginIsInstalled(
+        PluginView* plugin
+    ) -> void;
+
+    auto PluginIsInstalling(
+        PluginView* plugin
+    ) -> void;
+
+    auto MessageBox(
+        QMessageBox::Icon  icon,
+        const std::string& title,
+        const std::string& text
     ) -> void;
 };
 

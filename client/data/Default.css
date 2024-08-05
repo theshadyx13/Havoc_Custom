@@ -327,3 +327,50 @@ QToolButton:pressed, QPushButton:pressed[HcButton="true"] {
     background-color: #282A36;
     color: #f8f8f2;
 }
+
+QPushButton[HcButtonInstall="install"] {
+    border-radius: 2px;
+    font-weight: bold;
+    padding: 3px 6px 3px 6px;
+    border: 1px solid #50FA7B;
+    background: #44475a;
+    color: #F8F8F2;
+}
+
+QPushButton:pressed[HcButtonInstall="install"] {
+    border: 1px solid #50FA7B;
+    background: #44475A;
+}
+
+QPushButton:hover[HcButtonInstall="install"] {
+    border: 1px solid #50FA7B;
+    color: #50FA7B;
+}
+
+QPushButton[HcButtonInstall="installing"] {
+    border-radius: 2px;
+    font-weight: bold;
+    padding: 3px 6px 3px 6px;
+    border: 1px solid #44475A;
+    background: #282a36;
+    color: #F8F8F2;
+}
+
+QPushButton[HcButtonInstall="uninstall"] {
+    border-radius: 2px;
+    font-weight: bold;
+    padding: 3px 6px 3px 6px;
+    border: 1px solid #FF5555;
+    background: #44475a;
+    color: #F8F8F2;
+}
+
+QPushButton:pressed[HcButtonInstall="uninstall"] {
+    border: 1px solid #FF5555;
+    background: #44475A;
+}
+
+QPushButton:hover[HcButtonInstall="uninstall"] {
+    border: 1px solid #FF5555;
+    color: #FF5555;
+}

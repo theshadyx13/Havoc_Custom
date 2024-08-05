@@ -41,73 +41,61 @@ public:
     }
 };
 
-class HcMarketPluginItem : public QWidget
-{
-public:
-    QGridLayout* gridLayout       = { 0 };
-    QLabel*      LabelDescription = { 0 };
-    QLabel*      LabelName        = { 0 };
-    QGridLayout* GridLayout       = { 0 };
-    QLabel*      LabelInstalled   = { 0 };
+HcMarketPluginItem::HcMarketPluginItem(
+    const QString& name,
+    const QString& description,
+    QWidget*       parent = nullptr
+) : QWidget( parent ) {
+    gridLayout = new QGridLayout( this );
+    gridLayout->setObjectName( "gridLayout" );
 
-    explicit HcMarketPluginItem(
-        const QString& name,
-        const QString& description,
-        QWidget*       parent = nullptr
-    ) : QWidget( parent ) {
-        gridLayout = new QGridLayout( this );
-        gridLayout->setObjectName( "gridLayout" );
+    LabelName = new QLabel( this );
+    LabelName->setObjectName( "LabelName" );
 
-        LabelName = new QLabel( this );
-        LabelName->setObjectName( "LabelName" );
+    LabelDescription = new QLabel( this );
+    LabelDescription->setObjectName( "LabelDescription" );
 
-        LabelDescription = new QLabel( this );
-        LabelDescription->setObjectName( "LabelDescription" );
+    auto policy = QSizePolicy( QSizePolicy::Ignored, QSizePolicy::Preferred );
+    policy.setHorizontalStretch( 0 );
+    policy.setVerticalStretch( 0 );
+    policy.setHeightForWidth( LabelDescription->sizePolicy().hasHeightForWidth() );
+    LabelDescription->setSizePolicy( policy );
 
-        auto policy = QSizePolicy( QSizePolicy::Ignored, QSizePolicy::Preferred );
-        policy.setHorizontalStretch( 0 );
-        policy.setVerticalStretch( 0 );
-        policy.setHeightForWidth( LabelDescription->sizePolicy().hasHeightForWidth() );
-        LabelDescription->setSizePolicy( policy );
+    GridLayout = new QGridLayout();
+    GridLayout->setObjectName( u"GridLayout" );
 
-        GridLayout = new QGridLayout();
-        GridLayout->setObjectName( u"GridLayout" );
+    gridLayout->addWidget( LabelDescription, 1, 0, 1, 1 );
+    gridLayout->addWidget( LabelName, 0, 0, 1, 1 );
+    gridLayout->addLayout( GridLayout, 0, 1, 2, 1 );
+    gridLayout->setColumnStretch( 0, 1 );
 
-        gridLayout->addWidget( LabelDescription, 1, 0, 1, 1 );
-        gridLayout->addWidget( LabelName, 0, 0, 1, 1 );
-        gridLayout->addLayout( GridLayout, 0, 1, 2, 1 );
-        gridLayout->setColumnStretch( 0, 1 );
+    LabelDescription->setText( description );
+    LabelName->setText( std::format( "<p><span style=\" font-size:12pt;\">{}</span></p>", name.toStdString() ).c_str() );
 
-        LabelDescription->setText( description );
-        LabelName->setText( std::format( "<p><span style=\" font-size:12pt;\">{}</span></p>", name.toStdString() ).c_str() );
+    QMetaObject::connectSlotsByName( this );
+}
 
+void HcMarketPluginItem::setInstalled() {
+    if ( LabelInstalled ) {
         setNotInstalled();
-
-        QMetaObject::connectSlotsByName( this );
     }
 
-    void setInstalled() {
-        if ( LabelInstalled ) {
-            setNotInstalled();
-        }
+    LabelInstalled = new QLabel();
+    LabelInstalled->setObjectName( "LabelInstalled" );
+    LabelInstalled->setText( "Installed" );
+    LabelInstalled->setProperty( "HcLabelDisplay", "green" );
+    LabelInstalled->setFixedHeight( 25 );
 
-        LabelInstalled = new QLabel( this );
-        LabelInstalled->setObjectName( "LabelInstalled" );
-        LabelInstalled->setText( "Installed" );
-        LabelInstalled->setProperty( "HcLabelDisplay", "green" );
-        LabelInstalled->setFixedHeight( 25 );
+    GridLayout->addWidget( LabelInstalled, 0, 0, 1, 1 );
+}
 
-        GridLayout->addWidget( LabelInstalled, 0, 0, 1, 1 );
+void HcMarketPluginItem::setNotInstalled() {
+    if ( LabelInstalled ) {
+        GridLayout->removeWidget( LabelInstalled );
+        delete LabelInstalled;
+        LabelInstalled = nullptr;
     }
-
-    void setNotInstalled() {
-        if ( LabelInstalled ) {
-            GridLayout->removeWidget( LabelInstalled );
-            delete LabelInstalled;
-            LabelInstalled = nullptr;
-        }
-    }
-};
+}
 
 class HcListWidgetDeselect : public QListWidget {
 
@@ -166,7 +154,51 @@ HcStoreWidget::HcStoreWidget( QWidget* parent ) : QWidget( parent ) {
 
     connect( PluginWorker.Thread, &QThread::started, PluginWorker.Worker, &HcStorePluginWorker::run );
     connect( this, &HcStoreWidget::RegisterRepository, PluginWorker.Worker, &HcStorePluginWorker::RegisterRepository );
+    connect( this, &HcStoreWidget::PluginInstall, PluginWorker.Worker, &HcStorePluginWorker::PluginInstall );
+
     connect( PluginWorker.Worker, &HcStorePluginWorker::AddPlugin, this, &HcStoreWidget::AddPlugin );
+    connect( PluginWorker.Worker, &HcStorePluginWorker::MessageBox, this, [&](
+        QMessageBox::Icon  icon,
+        const std::string& title,
+        const std::string& content
+    ) {
+        Havoc->Gui->MessageBox( icon, title, content );
+    } );
+
+    connect( PluginWorker.Worker, &HcStorePluginWorker::PluginIsInstalling, this, [&]( PluginView* plugin ) {
+        plugin->ButtonInstall->setText( "Installing..." );
+        plugin->ButtonInstall->setProperty( "HcButtonInstall", "installing" );
+        plugin->ButtonInstall->setDisabled( true );
+        plugin->ButtonInstall->style()->polish( plugin->ButtonInstall );
+    } );
+
+    connect( PluginWorker.Worker, &HcStorePluginWorker::PluginIsInstalled, this, [&]( PluginView* plugin ) {
+        plugin->ButtonInstall->setEnabled( true );
+        if ( plugin->plugin_dir.exists() ) {
+            auto script = QFile( plugin->plugin_dir.path() + "/plugin.py" );
+
+            ( ( HcMarketPluginItem* ) plugin->ListWidget )->setInstalled();
+
+            plugin->ButtonInstall->setText( "Uninstall" );
+            plugin->ButtonInstall->setProperty( "HcButtonInstall", "uninstall" );
+
+            if ( script.exists() ) {
+                try {
+                    py11::gil_scoped_acquire gil;
+                    Havoc->Gui->PageScripts->LoadScript( script.fileName().toStdString() );
+                } catch ( py11::error_already_set &eas ) {
+                    Helper::MessageBox( QMessageBox::Critical, "plugin installation", std::format( "failed while loading {} plugin scripts:\n{}", plugin->name, eas.what() ) );
+                    spdlog::error( "plugin error while loading {} python scripts:\n{}", plugin->name, eas.what() );
+                }
+            }
+        } else {
+            ( ( HcMarketPluginItem* ) plugin->ListWidget )->setNotInstalled();
+
+            plugin->ButtonInstall->setText( "Install" );
+            plugin->ButtonInstall->setProperty( "HcButtonInstall", "install" );
+        }
+        plugin->ButtonInstall->style()->polish( plugin->ButtonInstall );
+    } );
 
     connect( MarketPlaceSearch, &QLineEdit::textEdited, this, &HcStoreWidget::QueryPluginMarket );
     connect( MarketPlaceList, &QListWidget::itemClicked, this, [&]( QListWidgetItem* item ){
@@ -183,7 +215,6 @@ auto HcStoreWidget::AddPlugin(
     const std::string& repo,
     PluginView*        plugin
 ) -> void {
-    auto plugin_name = std::string();
     auto project_url = repo;
     auto categories  = std::vector<std::string>();
     auto description = std::string();
@@ -199,7 +230,7 @@ auto HcStoreWidget::AddPlugin(
     //
 
     if ( plugin->object.contains( "name" ) && plugin->object[ "name" ].is_string() ) {
-        plugin_name = plugin->object[ "name" ].get<std::string>();
+        plugin->name = plugin->object[ "name" ].get<std::string>();
     } else {
         spdlog::error( "AddPlugin error: failed to retrieve plugin name (either not found or not a string)" );
         return;
@@ -276,6 +307,7 @@ auto HcStoreWidget::AddPlugin(
     plugin->ButtonInstall = new QPushButton( plugin->Widget );
     plugin->ButtonInstall->setObjectName( "PluginButtonInstall" );
     plugin->ButtonInstall->setText( "Install" );
+    plugin->ButtonInstall->setProperty( "HcButtonInstall", "install" );
     plugin->ButtonInstall->setFixedWidth( 120 );
 
     plugin->LabelName = new QLabel( plugin->Widget );
@@ -316,7 +348,7 @@ auto HcStoreWidget::AddPlugin(
     // display the retrieved plugin information
     //
 
-    plugin->LabelName->setText( std::format( "<a href=\"{}\" style=\"color: #8BE9FD; text-decoration:none; font-size:18pt;\"><span>{}</span></a>", project_url, plugin_name ).c_str() );
+    plugin->LabelName->setText( std::format( "<a href=\"{}\" style=\"color: #8BE9FD; text-decoration:none; font-size:18pt;\"><span>{}</span></a>", project_url, plugin->name ).c_str() );
     plugin->LabelDescription->setText( description.c_str() );
     plugin->TextReadme->setMarkdown( readme.c_str() );
 
@@ -332,6 +364,22 @@ auto HcStoreWidget::AddPlugin(
     //
 
     AddPluginToMarketList( plugin );
+
+    plugin->plugin_dir.setPath( QString( ( parent + "/plugins/" + plugin->name ).c_str() ) );
+    if ( ( plugin->plugin_dir.exists() ) ) {
+        //
+        // if the path/directory exists
+        // then it means we installed it
+        //
+        ( ( HcMarketPluginItem* ) plugin->ListWidget )->setInstalled();
+        plugin->ButtonInstall->setText( "Uninstall" );
+        plugin->ButtonInstall->setProperty( "HcButtonInstall", "uninstall" );
+        plugin->ButtonInstall->style()->polish( plugin->ButtonInstall );
+    }
+
+    connect( plugin->ButtonInstall, &QPushButton::clicked, this, [&]() {
+        emit PluginInstall( Plugins.at( PluginViewStack->currentIndex() ) );
+    } );
 
     //
     // each time a plugin gets added revert
@@ -434,5 +482,3 @@ auto HcStoreWidget::HttpGet(
 
     return ( result->body );
 }
-
-

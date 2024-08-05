@@ -17,6 +17,26 @@
 #include <ui/HcLineEdit.h>
 #include <core/HcStorePluginWorker.h>
 
+class HcMarketPluginItem : public QWidget
+{
+public:
+    QGridLayout* gridLayout       = { 0 };
+    QLabel*      LabelDescription = { 0 };
+    QLabel*      LabelName        = { 0 };
+    QGridLayout* GridLayout       = { 0 };
+    QLabel*      LabelInstalled   = { 0 };
+
+    explicit HcMarketPluginItem(
+        const QString& name,
+        const QString& description,
+        QWidget*       parent
+    );
+
+    void setInstalled();
+
+    void setNotInstalled();
+};
+
 class HcStoreWidget : public QWidget {
     Q_OBJECT
 
@@ -68,6 +88,10 @@ public:
 signals:
     auto RegisterRepository(
         const std::string& repository
+    ) -> void;
+
+    auto PluginInstall(
+        PluginView* plugin
     ) -> void;
 };
 
