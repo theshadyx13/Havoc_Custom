@@ -82,15 +82,17 @@ func (t *Teamserver) ListenerStart(name, protocol string, options map[string]any
 		port   string
 		status string
 		path   string
+		found  = false
 	)
 
 	for _, prot := range t.protocols {
 		if val, ok := prot.Data["protocol"]; ok {
 			if val.(string) == protocol {
-
 				if t.ListenerExists(name) {
 					return errors.New("listener already exists")
 				}
+
+				found = true
 
 				if path, err = t.ListenerInitDir(name); err != nil {
 					return errors.New("failed to create listener config path: " + err.Error())
@@ -128,7 +130,11 @@ func (t *Teamserver) ListenerStart(name, protocol string, options map[string]any
 		}
 	}
 
-	return nil
+	if !found {
+		err = fmt.Errorf("listener protocol \"%v\" has not been registered by the server", protocol)
+	}
+
+	return err
 }
 
 func (t *Teamserver) ListenerEvent(protocol string, event map[string]any) (map[string]any, error) {
