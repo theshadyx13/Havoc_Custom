@@ -23,12 +23,15 @@ public:
     QGridLayout* gridLayout       = { 0 };
     QLabel*      LabelDescription = { 0 };
     QLabel*      LabelName        = { 0 };
-    QGridLayout* GridLayout       = { 0 };
+    QLabel*      LabelGroup       = { 0 };
+    QSpacerItem* Spacer           = { 0 };
+    QGridLayout* InstallLayout    = { 0 };
     QLabel*      LabelInstalled   = { 0 };
 
     explicit HcMarketPluginItem(
         const QString& name,
         const QString& description,
+        const QString& group,
         QWidget*       parent
     );
 
@@ -65,7 +68,8 @@ public:
     ) -> void;
 
     auto AddPluginToMarketList(
-        PluginView* plugin
+        PluginView*        plugin,
+        const std::string& group = "local"
     ) -> void;
 
     auto QueryPluginMarket(
@@ -77,17 +81,19 @@ public:
         const QString&    query
     ) -> bool;
 
-    auto PluginCheckInstalled(
-        const PluginView* plugin
-    ) -> bool;
-
     static auto HttpGet(
         const std::string& url
     ) -> std::optional<std::string>;
 
 signals:
     auto RegisterRepository(
-        const std::string& repository
+        const std::string&              repository,
+        const std::vector<std::string>& plugins
+    ) -> void;
+
+    auto RegisterPlugin(
+        const std::string& directory,
+        const json&        object
     ) -> void;
 
     auto PluginInstall(

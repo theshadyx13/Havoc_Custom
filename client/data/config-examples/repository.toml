@@ -1,2 +1,13 @@
+##
+## register the public community plugins repo of havoc to the client
+##
 [[repository]]
+
 link = "https://github.com/HavocFramework/community-plugins"
+
+##
+## install plugins by default after registering the repository
+##
+plugins = [
+    'unguard-eat',
+]

@@ -44,29 +44,54 @@ public:
 HcMarketPluginItem::HcMarketPluginItem(
     const QString& name,
     const QString& description,
+    const QString& group  = "local",
     QWidget*       parent = nullptr
 ) : QWidget( parent ) {
     gridLayout = new QGridLayout( this );
     gridLayout->setObjectName( "gridLayout" );
 
-    LabelName = new QLabel( this );
+    auto policy = QSizePolicy( QSizePolicy::Maximum, QSizePolicy::Maximum );
+    LabelName   = new QLabel( this );
     LabelName->setObjectName( "LabelName" );
+    policy.setHorizontalStretch( 0 );
+    policy.setVerticalStretch( 0 );
+    policy.setHeightForWidth( LabelName->sizePolicy().hasHeightForWidth() );
+    LabelName->setSizePolicy( policy );
+
+    policy     = QSizePolicy( QSizePolicy::Maximum, QSizePolicy::Minimum );
+    LabelGroup = new QLabel( this );
+    LabelGroup->setObjectName( "LabelGroup" );
+    policy.setHorizontalStretch( 0 );
+    policy.setVerticalStretch( 0 );
+    policy.setHeightForWidth( LabelGroup->sizePolicy().hasHeightForWidth() );
+    LabelGroup->setSizePolicy( policy );
+    LabelGroup->setText( group );
+
+    if ( group == "local" ) {
+        LabelGroup->setProperty( "HcLabelDisplay", "tag" );
+    } else {
+        LabelGroup->setProperty( "HcLabelDisplay", "cyan" );
+    }
 
     LabelDescription = new QLabel( this );
     LabelDescription->setObjectName( "LabelDescription" );
 
-    auto policy = QSizePolicy( QSizePolicy::Ignored, QSizePolicy::Preferred );
+    policy = QSizePolicy( QSizePolicy::Ignored, QSizePolicy::Preferred );
     policy.setHorizontalStretch( 0 );
     policy.setVerticalStretch( 0 );
     policy.setHeightForWidth( LabelDescription->sizePolicy().hasHeightForWidth() );
     LabelDescription->setSizePolicy( policy );
 
-    GridLayout = new QGridLayout();
-    GridLayout->setObjectName( u"GridLayout" );
+    InstallLayout = new QGridLayout();
+    InstallLayout->setObjectName( u"InstallLayout" );
 
-    gridLayout->addWidget( LabelDescription, 1, 0, 1, 1 );
+    Spacer = new QSpacerItem( 40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum );
+
     gridLayout->addWidget( LabelName, 0, 0, 1, 1 );
-    gridLayout->addLayout( GridLayout, 0, 1, 2, 1 );
+    gridLayout->addWidget( LabelGroup, 0, 1, 1, 1 );
+    gridLayout->addLayout( InstallLayout, 0, 7, 2, 1 );
+    gridLayout->addItem( Spacer, 0, 2, 1, 5 );
+    gridLayout->addWidget( LabelDescription, 1, 0, 1, 7 );
     gridLayout->setColumnStretch( 0, 1 );
 
     LabelDescription->setText( description );
@@ -80,18 +105,22 @@ void HcMarketPluginItem::setInstalled() {
         setNotInstalled();
     }
 
+    auto policy    = QSizePolicy( QSizePolicy::Maximum, QSizePolicy::Maximum );
     LabelInstalled = new QLabel();
     LabelInstalled->setObjectName( "LabelInstalled" );
     LabelInstalled->setText( "Installed" );
     LabelInstalled->setProperty( "HcLabelDisplay", "green" );
-    LabelInstalled->setFixedHeight( 25 );
+    policy.setHorizontalStretch( 0 );
+    policy.setVerticalStretch( 0 );
+    policy.setHeightForWidth( LabelInstalled->sizePolicy().hasHeightForWidth() );
+    LabelInstalled->setSizePolicy( policy );
 
-    GridLayout->addWidget( LabelInstalled, 0, 0, 1, 1 );
+    InstallLayout->addWidget( LabelInstalled, 0, 0, 1, 1 );
 }
 
 void HcMarketPluginItem::setNotInstalled() {
     if ( LabelInstalled ) {
-        GridLayout->removeWidget( LabelInstalled );
+        InstallLayout->removeWidget( LabelInstalled );
         delete LabelInstalled;
         LabelInstalled = nullptr;
     }
@@ -154,6 +183,7 @@ HcStoreWidget::HcStoreWidget( QWidget* parent ) : QWidget( parent ) {
 
     connect( PluginWorker.Thread, &QThread::started, PluginWorker.Worker, &HcStorePluginWorker::run );
     connect( this, &HcStoreWidget::RegisterRepository, PluginWorker.Worker, &HcStorePluginWorker::RegisterRepository );
+    connect( this, &HcStoreWidget::RegisterPlugin, PluginWorker.Worker, &HcStorePluginWorker::RegisterPlugin );
     connect( this, &HcStoreWidget::PluginInstall, PluginWorker.Worker, &HcStorePluginWorker::PluginInstall );
 
     connect( PluginWorker.Worker, &HcStorePluginWorker::AddPlugin, this, &HcStoreWidget::AddPlugin );
@@ -174,6 +204,7 @@ HcStoreWidget::HcStoreWidget( QWidget* parent ) : QWidget( parent ) {
 
     connect( PluginWorker.Worker, &HcStorePluginWorker::PluginIsInstalled, this, [&]( PluginView* plugin ) {
         plugin->ButtonInstall->setEnabled( true );
+
         if ( plugin->plugin_dir.exists() ) {
             auto script = QFile( plugin->plugin_dir.path() + "/plugin.py" );
 
@@ -194,8 +225,20 @@ HcStoreWidget::HcStoreWidget( QWidget* parent ) : QWidget( parent ) {
         } else {
             ( ( HcMarketPluginItem* ) plugin->ListWidget )->setNotInstalled();
 
-            plugin->ButtonInstall->setText( "Install" );
-            plugin->ButtonInstall->setProperty( "HcButtonInstall", "install" );
+            if ( ! plugin->repo.empty() ) {
+                //
+                // can be installed from a remote repository again
+                //
+                plugin->ButtonInstall->setText( "Install" );
+                plugin->ButtonInstall->setProperty( "HcButtonInstall", "install" );
+            } else {
+                //
+                // was locally added/installed
+                //
+                plugin->ButtonInstall->setEnabled( false );
+                plugin->ButtonInstall->setText( "Removed" );
+                plugin->ButtonInstall->setProperty( "HcButtonInstall", "installing" );
+            }
         }
         plugin->ButtonInstall->style()->polish( plugin->ButtonInstall );
     } );
@@ -229,17 +272,11 @@ auto HcStoreWidget::AddPlugin(
     // such as name, description, readme, categories, etc.
     //
 
-    if ( plugin->object.contains( "name" ) && plugin->object[ "name" ].is_string() ) {
-        plugin->name = plugin->object[ "name" ].get<std::string>();
-    } else {
-        spdlog::error( "AddPlugin error: failed to retrieve plugin name (either not found or not a string)" );
-        return;
-    }
-
     if ( plugin->object.contains( "description" ) && plugin->object[ "description" ].is_string() ) {
         description = plugin->object[ "description" ].get<std::string>();
     } else {
         spdlog::error( "AddPlugin error: failed to retrieve plugin description (either not found or not a string)" );
+        plugin->mutex.unlock();
         return;
     }
 
@@ -247,6 +284,7 @@ auto HcStoreWidget::AddPlugin(
         readme = plugin->object[ "readme" ].get<std::string>();
     } else {
         spdlog::error( "AddPlugin error: failed to retrieve plugin readme (either not found or not a string)" );
+        plugin->mutex.unlock();
         return;
     }
 
@@ -257,6 +295,7 @@ auto HcStoreWidget::AddPlugin(
             author_name = plugin->object[ "author" ].get<json>()[ "name" ].get<std::string>();
         } else {
             spdlog::error( "AddPlugin error: failed to retrieve plugin author name (either not found or not a string)" );
+            plugin->mutex.unlock();
             return;
         }
 
@@ -266,10 +305,12 @@ auto HcStoreWidget::AddPlugin(
             author_url = plugin->object[ "author" ].get<json>()[ "url" ].get<std::string>();
         } else {
             spdlog::error( "AddPlugin error: failed to retrieve plugin author url (either not found or not a string)" );
+            plugin->mutex.unlock();
             return;
         }
     } else {
         spdlog::error( "AddPlugin error: failed to retrieve plugin author (either not found or not an object)" );
+        plugin->mutex.unlock();
         return;
     }
 
@@ -362,10 +403,17 @@ auto HcStoreWidget::AddPlugin(
     //
     // insert the plugin into the market list
     //
+    auto group = std::string( "local" );
 
-    AddPluginToMarketList( plugin );
+    if ( ! repo.empty() ) {
+        //
+        // is remote repository plugin
+        //
+        group = parent.substr( parent.find_last_of( "/" ) + 1 );
+    }
 
-    plugin->plugin_dir.setPath( QString( ( parent + "/plugins/" + plugin->name ).c_str() ) );
+    AddPluginToMarketList( plugin, group );
+
     if ( ( plugin->plugin_dir.exists() ) ) {
         //
         // if the path/directory exists
@@ -388,13 +436,22 @@ auto HcStoreWidget::AddPlugin(
 
     MarketPlaceList->setCurrentRow( 0 );
     PluginViewStack->setCurrentIndex( 0 );
+
+    plugin->mutex.unlock();
 }
 
 auto HcStoreWidget::AddPluginToMarketList(
-    PluginView *plugin
+    PluginView*        plugin,
+    const std::string& group
 ) -> void {
     plugin->ListItem   = new QListWidgetItem;
-    plugin->ListWidget = new HcMarketPluginItem( plugin->object[ "name" ].get<std::string>().c_str(), plugin->object[ "description" ].get<std::string>().c_str(), this );
+    plugin->ListWidget = new HcMarketPluginItem(
+        plugin->object[ "name" ].get<std::string>().c_str(),
+        plugin->object[ "description" ].get<std::string>().c_str(),
+        group.c_str(),
+        this
+    );
+
     plugin->ListItem->setSizeHint( plugin->ListWidget->sizeHint() );
 
     MarketPlaceList->addItem( plugin->ListItem );

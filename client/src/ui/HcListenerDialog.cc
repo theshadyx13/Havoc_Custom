@@ -130,6 +130,8 @@ auto HcListenerDialog::save() -> void {
             auto exception = std::string();
 
             try {
+                py11::gil_scoped_acquire gil;
+
                 /* sanity check input */
                 if ( ! protocol.instance.attr( "sanity_check" )().cast<bool>() ) {
                     /* sanity check failed. exit and dont send request */
@@ -144,7 +146,6 @@ auto HcListenerDialog::save() -> void {
 
                 spdlog::debug( "data -> {}", data.dump() );
             } catch ( py11::error_already_set &eas ) {
-                py11::gil_scoped_release release;
                 Helper::MessageBox(
                     QMessageBox::Icon::Critical,
                     "Listener saving error",
@@ -153,7 +154,6 @@ auto HcListenerDialog::save() -> void {
                 return;
             }
 
-            py11::gil_scoped_release release;
             found = true;
             break;
         }

@@ -75,10 +75,60 @@ HcPagePlugins::HcPagePlugins()
     if ( Havoc->Config.contains( "repository" ) ) {
         for ( const auto& repository : toml::find<toml::array>( Havoc->Config, "repository" ) ) {
             if ( repository.contains( "link" ) && repository.at( "link" ).is_string() ) {
-                emit TabPluginStore->RegisterRepository( toml::find<std::string>( repository, "link" ) );
+                auto plugins = std::vector<std::string>();
+
+                //
+                // check if there are any plugins to be installed
+                //
+                if ( repository.contains( "plugins" ) && repository.at( "plugins" ).is_array() ) {
+                    for ( const auto& plugin : repository.at( "plugins" ).as_array() ) {
+                        if ( plugin.is_string() ) {
+                            plugins.push_back( plugin.as_string().str );
+                        }
+                    }
+                }
+
+                emit TabPluginStore->RegisterRepository(
+                    toml::find<std::string>( repository, "link" ),
+                    plugins
+                );
             }
         }
     };
+
+    if ( Havoc->directory().exists() ) {
+        auto plugins = QDir( Havoc->directory().path() + "/plugins" );
+
+        if ( plugins.exists() ) {
+            for ( const auto& plugin : plugins.entryList( QDir::AllDirs | QDir::NoDotAndDotDot ) ) {
+                auto plugin_path = plugins.path() + "/" + plugin;
+                auto plugin_json = QFile( plugin_path + "/plugin.json" );
+                auto json_object = json();
+
+                spdlog::debug( "local plugin found -> {}", plugin.toStdString() );
+
+                if ( ! plugin_json.exists() ) {
+                    spdlog::warn( "local plugin {} does not contain json metadata file", plugin.toStdString() );
+                    continue;
+                }
+
+                try {
+                    plugin_json.open( QFile::ReadOnly );
+                    if ( ( json_object = json::parse( plugin_json.readAll().toStdString() ) ).is_discarded() ) {
+                        spdlog::error( "failed to parse json object from local plugin {}: discarded", plugin.toStdString() );
+                        continue;
+                    }
+                } catch ( std::exception& e ) {
+                    spdlog::error( "failed to parse json object from local plugin {}: {}", plugin.toStdString(), e.what() );
+                    continue;
+                }
+
+                emit TabPluginStore->RegisterPlugin( plugin_path.toStdString(), json_object );
+            }
+        } else {
+            plugins.mkpath( "." );
+        }
+    }
 
     gridLayout_2->addWidget( ButtonLoad, 0, 0, 1, 1 );
     gridLayout_2->addItem( horizontalSpacer, 0, 1, 1, 1 );

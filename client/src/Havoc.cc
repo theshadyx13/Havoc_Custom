@@ -122,13 +122,20 @@ auto HavocClient::Main(
     Result = Http.Post( "/api/login", data.dump(), "application/json" );
 
     if ( HttpErrorToString( Result.error() ).has_value() ) {
-        spdlog::error( "Failed to send login request: {}", HttpErrorToString( Result.error() ).value() );
+        auto error = HttpErrorToString( Result.error() ).value();
+        spdlog::error( "Failed to send login request: {}", error );
+
+        Helper::MessageBox(
+            QMessageBox::Critical,
+            "Login failure",
+            std::format( "Failed to login: {}", error )
+        );
+
         return;
     }
 
     /* 401 Unauthorized: Failed to log in */
     if ( Result->status == 401 ) {
-
         if ( Result->body.empty() ) {
             Helper::MessageBox(
                 QMessageBox::Critical,
@@ -553,8 +560,7 @@ auto HavocClient::SetupDirectory(
     void
 ) -> bool {
     auto havoc_dir   = QDir( QDir::homePath() + "/.havoc" );
-    auto client_dir  = QDir( havoc_dir.path() + "/client" );
-    auto config_path = QFile( client_dir.path() + "/config.toml" );
+    auto config_path = QFile();
 
     if ( ! havoc_dir.exists() ) {
         if ( ! havoc_dir.mkpath( "." ) ) {
@@ -562,12 +568,14 @@ auto HavocClient::SetupDirectory(
         }
     }
 
+    client_dir.setPath( havoc_dir.path() + "/client" );
     if ( ! client_dir.exists() ) {
         if ( ! client_dir.mkpath( "." ) ) {
             return false;
         }
     }
 
+    config_path.setFileName( client_dir.path() + "/config.toml" );
     config_path.open( QIODevice::ReadWrite );
 
     try {

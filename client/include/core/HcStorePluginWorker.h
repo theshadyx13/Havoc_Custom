@@ -24,6 +24,8 @@ struct PluginView {
     std::string name;
     QDir        plugin_dir;
     json        object;
+    std::mutex  mutex;
+    bool        remove;
 
     QListWidgetItem* ListItem;
     QWidget*         ListWidget;
@@ -46,13 +48,20 @@ public:
 
 public slots:
     auto RegisterRepository(
-        const std::string& repository
+        const std::string&              repository,
+        const std::vector<std::string>& plugins
+    ) -> void;
+
+    auto RegisterPlugin(
+        const std::string& directory,
+        const json&        object
     ) -> void;
 
     auto PluginProcess(
         const std::string& parent,
-        const json&        object
-    ) -> void;
+        const json&        object,
+        const bool         local = false
+    ) -> std::optional<PluginView*>;
 
     auto PluginInstall(
         PluginView* plugin

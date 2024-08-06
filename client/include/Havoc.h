@@ -69,6 +69,8 @@ class HavocClient : public QWidget {
     std::vector<NamedObject>  agents     = {};
     std::vector<NamedObject>  callbacks  = {};
 
+    QDir client_dir = {};
+
 public:
     HcMainWindow* Gui    = nullptr;
     toml_t        Config = {};
@@ -103,6 +105,8 @@ public:
     auto SetupThreads() -> void;
 
     auto SetupDirectory() -> bool;
+
+    inline auto directory() -> QDir { return client_dir; };
 
     //
     // Callbacks
