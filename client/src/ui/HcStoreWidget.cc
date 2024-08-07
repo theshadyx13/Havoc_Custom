@@ -447,9 +447,6 @@ auto HcStoreWidget::AddPluginToMarketList(
     PluginView*        plugin,
     const std::string& group
 ) -> void {
-
-    spdlog::debug( "plugin( {} )->access_token.empty() -> {}: {}", plugin->plugin_dir.path().toStdString(), plugin->access_token.empty(), plugin->access_token );
-
     plugin->ListItem   = new QListWidgetItem;
     plugin->ListWidget = new HcMarketPluginItem(
         plugin->object[ "name" ].get<std::string>().c_str(),
