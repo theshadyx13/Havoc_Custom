@@ -8,6 +8,24 @@ link = "https://github.com/HavocFramework/community-plugins"
 ##
 ## install plugins by default after registering the repository
 ##
+# plugins = [
+#    'unguard-eat',
+# ]
+
+##
+## register the private plugins repo of havoc to the client
+##
+[[repository]]
+link = "https://github.com/Cracked5pider/private-plugins"
+
+##
+## since this repo is private we have to specify an access token
+##
+access_token = '<YOUR ACCESS TOKEN HERE>'
+
+##
+## install plugins by default after registering the repository
+##
 plugins = [
     'unguard-eat',
 ]

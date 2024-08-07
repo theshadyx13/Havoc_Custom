@@ -24,6 +24,7 @@ struct PluginView {
     std::string name;
     QDir        plugin_dir;
     json        object;
+    std::string access_token;
     std::mutex  mutex;
     bool        remove;
 
@@ -49,7 +50,8 @@ public:
 public slots:
     auto RegisterRepository(
         const std::string&              repository,
-        const std::vector<std::string>& plugins
+        const std::vector<std::string>& plugins,
+        const std::string&              credentials
     ) -> void;
 
     auto RegisterPlugin(
@@ -60,7 +62,14 @@ public slots:
     auto PluginProcess(
         const std::string& parent,
         const json&        object,
-        const bool         local = false
+        const std::string& access_token
+    ) -> std::optional<PluginView*>;
+
+    auto PluginProcess(
+        const std::string& parent,
+        const json&        object,
+        const bool         local = false,
+        const std::string& access_token = ""
     ) -> std::optional<PluginView*>;
 
     auto PluginInstall(

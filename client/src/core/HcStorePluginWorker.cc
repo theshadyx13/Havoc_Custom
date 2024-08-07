@@ -9,7 +9,8 @@
 
 auto HcStorePluginWorker::RegisterRepository(
     const std::string&              repository,
-    const std::vector<std::string>& plugins
+    const std::vector<std::string>& plugins,
+    const std::string&              credentials
 ) -> void {
     auto repo_file   = QFile();
     auto repo_dir    = QDir();
@@ -43,15 +44,22 @@ auto HcStorePluginWorker::RegisterRepository(
         //
         // install the repository json list locally
         //
-        repo_list = HcStoreWidget::HttpGet( repo_url.toString().toStdString() );
+        repo_list = HcStoreWidget::HttpGet( repo_url.toString().toStdString(), credentials );
         if ( repo_list.has_value() ) {
+            if ( repo_list.value() == "404: Not Found" ) {
+                spdlog::error( "failed to retrieve repo list from {}: {}", repository, repo_list->c_str() );
+                return;
+            }
+
             if ( repo_file.open( QIODevice::ReadWrite ) ) {
                 repo_file.write( repo_list->c_str() );
             } else {
                 spdlog::error( "failed to open file {}: {}", repo_file.fileName().toStdString(), repo_file.errorString().toStdString() );
+                return;
             }
         } else {
             spdlog::error( "failed to retrieve repo list from {}", repository );
+            return;
         }
     } else {
         if ( repo_file.open( QIODevice::ReadOnly ) ) {
@@ -64,11 +72,11 @@ auto HcStorePluginWorker::RegisterRepository(
 
     try {
         if ( ( repo_json = json::parse( repo_list->c_str() ) ).is_discarded() ) {
-            spdlog::debug( "invalid repository list from {}: json object has been discarded", repository );
+            spdlog::error( "invalid repository list from {}: json object has been discarded", repository );
             return;
         }
     } catch ( std::exception& e ) {
-        spdlog::debug( "invalid repository list from {}: {}", repository, e.what() );
+        spdlog::error( "invalid repository list from {}: {}", repository, e.what() );
         return;
     }
 
@@ -79,7 +87,7 @@ auto HcStorePluginWorker::RegisterRepository(
 
     if ( repo_json.is_array() ) {
         for ( const auto& plugin : repo_json.get<std::vector<json>>() ) {
-            auto process = PluginProcess( repo_dir.path().toStdString(), plugin );
+            auto process = PluginProcess( repo_dir.path().toStdString(), plugin, credentials );
 
             if ( process.has_value() ) {
                 reg_plugins.push_back( process.value() );
@@ -91,8 +99,6 @@ auto HcStorePluginWorker::RegisterRepository(
     // install plugins specified to be installed
     // after registering the repository
     //
-
-    spdlog::debug( "plugins registered: [plugins: {}] [reg_plugins: {}]", plugins.size(), reg_plugins.size() );
 
     for ( const auto plugin_install : plugins ) {
         for ( auto plugin : reg_plugins ) {
@@ -121,7 +127,16 @@ auto HcStorePluginWorker::RegisterPlugin(
 auto HcStorePluginWorker::PluginProcess(
     const std::string& parent,
     const json&        object,
-    const bool         local
+    const std::string& access_token
+) -> std::optional<PluginView*> {
+    return PluginProcess( parent, object, false, access_token );
+}
+
+auto HcStorePluginWorker::PluginProcess(
+    const std::string& parent,
+    const json&        object,
+    const bool         local,
+    const std::string& access_token
 ) -> std::optional<PluginView*> {
     auto readme = std::string();
     auto plugin = new PluginView;
@@ -132,6 +147,10 @@ auto HcStorePluginWorker::PluginProcess(
     //
     plugin->mutex.lock();
     plugin->object     = object;
+
+    if ( ! access_token.empty() ) {
+        plugin->access_token = access_token;
+    }
 
     if ( plugin->object.contains( "name" ) && plugin->object[ "name" ].is_string() ) {
         plugin->name = plugin->object[ "name" ].get<std::string>();
@@ -185,7 +204,7 @@ auto HcStorePluginWorker::PluginProcess(
                 url.setHost( "raw.githubusercontent.com" );
                 url.setPath( url.path() + "/main/" + QString( plugin->object[ "readme_path" ].get<std::string>().c_str() ) );
 
-                if ( ( body = HcStoreWidget::HttpGet( url.toString().toStdString() ) ).has_value() ) {
+                if ( ( body = HcStoreWidget::HttpGet( url.toString().toStdString(), access_token ) ).has_value() ) {
                     plugin->object[ "readme" ] = body.value().c_str();
                 } else {
                     spdlog::error( "PluginProcess error: failed to retrieve plugin readme from {}", url.toString().toStdString() );
@@ -223,6 +242,7 @@ auto HcStorePluginWorker::PluginInstall(
     auto process   = QProcess();
     auto command   = QStringList();
     auto installed = false;
+    auto git_repo  = QUrl( plugin->repo.c_str() );
 
     //
     // check if the folder already exists.
@@ -234,9 +254,6 @@ auto HcStorePluginWorker::PluginInstall(
         //
         // uninstall plugin locally
         //
-
-        spdlog::debug( "plugin uninstall: {}", plugin->name );
-
         if ( ! plugin->plugin_dir.removeRecursively() ) {
             emit MessageBox(
                 QMessageBox::Icon::Critical,
@@ -255,10 +272,14 @@ auto HcStorePluginWorker::PluginInstall(
         // installing plugin from remote repo
         //
 
-        spdlog::debug( "installing plugin {}: {}", plugin->repo, plugin->plugin_dir.path().toStdString() );
+        if ( ! plugin->access_token.empty() ) {
+            git_repo.setUserInfo( plugin->access_token.c_str() );
+        }
+
+        spdlog::debug( "installing plugin {}: {}", git_repo.url().toStdString(), plugin->plugin_dir.path().toStdString() );
 
         command << "-c";
-        command << std::format( "git clone {} {}", plugin->repo, plugin->plugin_dir.path().toStdString() ).c_str();
+        command << std::format( "git clone {} {}", git_repo.url().toStdString(), plugin->plugin_dir.path().toStdString() ).c_str();
 
         process.start( "sh", command );
 
@@ -287,4 +308,3 @@ auto HcStorePluginWorker::PluginInstall(
 
     emit PluginIsInstalled( plugin );
 }
-

@@ -32,6 +32,7 @@ public:
         const QString& name,
         const QString& description,
         const QString& group,
+        bool           pro,
         QWidget*       parent
     );
 
@@ -82,13 +83,15 @@ public:
     ) -> bool;
 
     static auto HttpGet(
-        const std::string& url
+        const std::string& url,
+        const std::string& authorization = ""
     ) -> std::optional<std::string>;
 
 signals:
     auto RegisterRepository(
         const std::string&              repository,
-        const std::vector<std::string>& plugins
+        const std::vector<std::string>& plugins,
+        const std::string&              credentials
     ) -> void;
 
     auto RegisterPlugin(

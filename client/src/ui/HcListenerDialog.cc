@@ -86,8 +86,6 @@ auto HcListenerDialog::retranslateUi() -> void {
 auto HcListenerDialog::changeProtocol(
     const QString &text
 ) -> void {
-    spdlog::debug( "changeProtocol( \"{}\" );", text.toStdString() );
-
     for ( int i = 0; i < Protocols.size(); i++ ) {
         if ( Protocols[ i ].name == text.toStdString() ) {
             StackedProtocols->setCurrentIndex( i );
@@ -139,12 +137,9 @@ auto HcListenerDialog::save() -> void {
                     return;
                 }
 
-                /* get data */
                 data[ "name" ]     = InputName->text().toStdString();
                 data[ "protocol" ] = protocol.name;
                 data[ "data" ]     = protocol.instance.attr( "save" )();
-
-                spdlog::debug( "data -> {}", data.dump() );
             } catch ( py11::error_already_set &eas ) {
                 Helper::MessageBox(
                     QMessageBox::Icon::Critical,

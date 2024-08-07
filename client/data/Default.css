@@ -224,6 +224,15 @@ QLabel[HcLabelDisplay="cyan"] {
     color: #8BE9FD;
 }
 
+QLabel[HcLabelDisplay="professional"] {
+    border-radius: 1px;
+    border:  1px solid #44475A;
+    padding: 2px 6px 2px 6px;
+    background-color: #313342;
+    font-weight: bold;
+    color: #b180ff;
+}
+
 QLabel[HcLabelDisplay="tag"] {
     border-radius: 3px;
     border: 1px solid #44475A;

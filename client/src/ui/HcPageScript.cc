@@ -75,7 +75,8 @@ HcPagePlugins::HcPagePlugins()
     if ( Havoc->Config.contains( "repository" ) ) {
         for ( const auto& repository : toml::find<toml::array>( Havoc->Config, "repository" ) ) {
             if ( repository.contains( "link" ) && repository.at( "link" ).is_string() ) {
-                auto plugins = std::vector<std::string>();
+                auto plugins      = std::vector<std::string>();
+                auto access_token = std::string();
 
                 //
                 // check if there are any plugins to be installed
@@ -88,9 +89,17 @@ HcPagePlugins::HcPagePlugins()
                     }
                 }
 
+                //
+                // check if there has been an access token specified
+                //
+                if ( repository.contains( "access_token" ) && repository.at( "access_token" ).is_string() ) {
+                    access_token = repository.at( "access_token" ).as_string();
+                }
+
                 emit TabPluginStore->RegisterRepository(
                     toml::find<std::string>( repository, "link" ),
-                    plugins
+                    plugins,
+                    access_token
                 );
             }
         }

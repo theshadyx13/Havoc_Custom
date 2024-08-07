@@ -44,8 +44,9 @@ public:
 HcMarketPluginItem::HcMarketPluginItem(
     const QString& name,
     const QString& description,
-    const QString& group  = "local",
-    QWidget*       parent = nullptr
+    const QString& group        = "local",
+    bool           professional = false,
+    QWidget*       parent       = nullptr
 ) : QWidget( parent ) {
     gridLayout = new QGridLayout( this );
     gridLayout->setObjectName( "gridLayout" );
@@ -67,10 +68,12 @@ HcMarketPluginItem::HcMarketPluginItem(
     LabelGroup->setSizePolicy( policy );
     LabelGroup->setText( group );
 
+    spdlog::debug( "professional: {}", professional );
+
     if ( group == "local" ) {
         LabelGroup->setProperty( "HcLabelDisplay", "tag" );
     } else {
-        LabelGroup->setProperty( "HcLabelDisplay", "cyan" );
+        LabelGroup->setProperty( "HcLabelDisplay", professional ? "professional" : "cyan" );
     }
 
     LabelDescription = new QLabel( this );
@@ -329,7 +332,7 @@ auto HcStoreWidget::AddPlugin(
     // create the Qt objects
     //
 
-    plugin->Widget = new QWidget( PluginViewStack );
+    plugin->Widget     = new QWidget( PluginViewStack );
     plugin->GridLayout = new QGridLayout( plugin->Widget );
     plugin->GridLayout->setObjectName( "PluginGridLayout" );
 
@@ -444,11 +447,15 @@ auto HcStoreWidget::AddPluginToMarketList(
     PluginView*        plugin,
     const std::string& group
 ) -> void {
+
+    spdlog::debug( "plugin( {} )->access_token.empty() -> {}: {}", plugin->plugin_dir.path().toStdString(), plugin->access_token.empty(), plugin->access_token );
+
     plugin->ListItem   = new QListWidgetItem;
     plugin->ListWidget = new HcMarketPluginItem(
         plugin->object[ "name" ].get<std::string>().c_str(),
         plugin->object[ "description" ].get<std::string>().c_str(),
         group.c_str(),
+        ! plugin->access_token.empty(),
         this
     );
 
@@ -524,11 +531,19 @@ auto HcStoreWidget::PluginQueryContainMeta(
 }
 
 auto HcStoreWidget::HttpGet(
-    const std::string& url
+    const std::string& url,
+    const std::string& authorization
 ) -> std::optional<std::string> {
     auto _url   = QUrl( url.c_str() );
     auto client = httplib::Client( _url.scheme().toStdString() + "://" + _url.host().toStdString() );
     auto result = httplib::Result();
+
+    if ( ! authorization.empty() ) {
+        auto base64 = QByteArray( authorization.c_str() ).toBase64().toStdString();
+        client.set_default_headers( {
+            { "Authorization", std::format( "Basic {}", base64 ) }
+        } );
+    }
 
     result = client.Get( _url.path().toStdString() );
 
@@ -537,5 +552,5 @@ auto HcStoreWidget::HttpGet(
         return std::nullopt;
     }
 
-    return ( result->body );
+    return result->status != 404 ? std::optional( result->body ) : std::nullopt;
 }
