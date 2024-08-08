@@ -1,0 +1,13 @@
+##
+## python scripts table
+##
+[scripts]
+
+file = [
+    "../../kaine-kit/scripts/kaine.py",
+    "../../kaine-kit/scripts/listener/http.py",
+    "../../kaine-kit/modules/modules.py",
+    "../../kaine-kit/kaine/modules/http/plugin.py",
+    "../../kaine-kit/kaine/modules/process/plugin.py",
+    "../../kaine-kit/kaine/modules/firebeam/plugin.py"
+]

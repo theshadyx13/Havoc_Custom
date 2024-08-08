@@ -112,11 +112,6 @@ find_package( OpenSSL REQUIRED )
 find_package( PythonLibs REQUIRED )
 
 ##
-## build Havoc client executable
-##
-add_executable( ${BINARY_NAME} ${HAVOC_INCLUDE} ${HAVOC_SRC} ${APP_ICON_RESOURCE_WINDOWS} )
-
-##
 ## Linking
 ##
 
@@ -136,12 +131,16 @@ include_directories( ${PYTHON_INCLUDE_DIRS} )
 ##
 find_package( Qt${QT_VERSION} COMPONENTS ${REQUIRED_LIBS} REQUIRED )
 
+## 
+## build the executable 
+## 
+add_executable( ${BINARY_NAME} ${HAVOC_INCLUDE} ${HAVOC_SRC} ${APP_ICON_RESOURCE_WINDOWS} )
+
 ##
 ## linking external libraries
 ##
-target_link_libraries(
-    ${BINARY_NAME}
-    ${REQUIRED_LIBS_QUALIFIED}
-    ${PYTHON_LIBRARIES}
-    OpenSSL::Crypto
+target_link_libraries( ${BINARY_NAME} PRIVATE 
+  ${REQUIRED_LIBS_QUALIFIED} 
+  ${PYTHON_LIBRARIES} 
+  OpenSSL::Crypto
 )

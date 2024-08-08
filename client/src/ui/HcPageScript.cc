@@ -214,12 +214,19 @@ auto HcPagePlugins::retranslateUi() -> void {
 auto HcPagePlugins::LoadScript(
     const std::string& path
 ) -> void {
+    if ( ! QFile( path.c_str() ).exists() ) {
+        spdlog::error( "attempted to load invalid scripts path: {}", path );
+        return;
+    }
+
+    spdlog::debug( "attempting to load script: {}", path );
 
     if ( LoadCallback.has_value() ) {
         try {
             LoadCallback.value()( path );
         } catch ( py11::error_already_set &eas ) {
             spdlog::error( "failed to load script {}: \n{}", path, eas.what() );
+            PyConsole->append( std::format( "failed to load script {}: \n{}", path, eas.what() ).c_str() );
         }
     } else {
         spdlog::debug( "PageScripts->LoadCallback not set" );

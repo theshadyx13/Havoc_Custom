@@ -146,15 +146,15 @@ auto HavocClient::Main(
             return;
         } else {
             if ( ( data = json::parse( Result->body ) ).is_discarded() ) {
-                goto InvalidServerResponseError;
+                goto ERROR_SERVER_RESPONSE;
             }
 
             if ( ! data.contains( "error" ) ) {
-                goto InvalidServerResponseError;
+                goto ERROR_SERVER_RESPONSE;
             }
 
             if ( ! data[ "error" ].is_string() ) {
-                goto InvalidServerResponseError;
+                goto ERROR_SERVER_RESPONSE;
             }
 
             Helper::MessageBox(
@@ -184,19 +184,19 @@ auto HavocClient::Main(
     Profile.Pass = data[ "password" ].get<std::string>();
 
     if ( Result->body.empty() ) {
-        goto InvalidServerResponseError;
+        goto ERROR_SERVER_RESPONSE;
     }
 
     if ( ( data = json::parse( Result->body ) ).is_discarded() ) {
-        goto InvalidServerResponseError;
+        goto ERROR_SERVER_RESPONSE;
     }
 
     if ( ! data.contains( "token" ) ) {
-        goto InvalidServerResponseError;
+        goto ERROR_SERVER_RESPONSE;
     }
 
     if ( ! data[ "token" ].is_string() ) {
-        goto InvalidServerResponseError;
+        goto ERROR_SERVER_RESPONSE;
     }
 
     Profile.Token = data[ "token" ].get<std::string>();
@@ -216,19 +216,22 @@ auto HavocClient::Main(
     Python.Engine->run();
 
     //
-    // merely debug purpose loading the scripts at startup
+    // load the registered scripts
     //
+    if ( Config.contains( "scripts" ) && Config.at( "scripts" ).is_table() ) {
+        auto scripts_tbl = Config.at( "scripts" ).as_table();
 
-    //
-    // TODO: remove this in future or
-    //       move it to the config file
-    //
-    Gui->PageScripts->LoadScript( "tests/python/kaine_payload.py" );
-    Gui->PageScripts->LoadScript( "tests/python/listener_http.py" );
-    Gui->PageScripts->LoadScript( "../../kaine-kit/modules/modules.py" );
-    Gui->PageScripts->LoadScript( "../../kaine-kit/kaine/modules/http/plugin.py" );
-    Gui->PageScripts->LoadScript( "../../kaine-kit/kaine/modules/process/plugin.py" );
-    Gui->PageScripts->LoadScript( "../../kaine-kit/kaine/modules/firebeam/plugin.py" );
+        if ( scripts_tbl.contains( "files" ) && scripts_tbl.at( "files" ).is_array() ) {
+            for ( const auto& file : scripts_tbl.at( "files" ).as_array() ) {
+                if ( ! file.is_string() ) {
+                    spdlog::error( "configuration scripts file value is not an string" );
+                    continue;
+                }
+
+                Gui->PageScripts->LoadScript( file.as_string() );
+            }
+        }
+    }
 
     //
     // set up the event thread and connect to the
@@ -240,8 +243,8 @@ auto HavocClient::Main(
 
     return;
 
-InvalidServerResponseError:
-    Helper::MessageBox(
+ERROR_SERVER_RESPONSE:
+    return Helper::MessageBox(
         QMessageBox::Critical,
         "Login failure",
         "Failed to login: Invalid response from the server"
