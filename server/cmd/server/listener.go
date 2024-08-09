@@ -64,7 +64,7 @@ func (t *Teamserver) ListenerInitDir(name string) (string, error) {
 		err  error
 	)
 
-	path = t.configPath + "/listeners/" + name
+	path = t.ConfigPath() + "/listeners/" + name
 
 	// create agents directory
 	if err = os.MkdirAll(path, os.ModePerm); err != nil {
