@@ -215,6 +215,33 @@ QLabel[HcLabelDisplay="green"] {
     color: #50FA7B;
 }
 
+QLabel[HcLabelDisplay="green-full"] {
+    border-radius: 1px;
+    border:  1px solid #50FA7B;
+    padding: 2px 6px 2px 6px;
+    background-color: #313342;
+    font-weight: bold;
+    color: #50FA7B;
+}
+
+QLabel[HcLabelDisplay="red"] {
+    border-radius: 1px;
+    border:  1px solid #44475A;
+    padding: 2px 6px 2px 6px;
+    background-color: #313342;
+    font-weight: bold;
+    color: #FF5555;
+}
+
+QLabel[HcLabelDisplay="red-full"] {
+    border-radius: 1px;
+    border:  1px solid #FF5555;
+    padding: 2px 6px 2px 6px;
+    background-color: #313342;
+    font-weight: bold;
+    color: #FF5555;
+}
+
 QLabel[HcLabelDisplay="cyan"] {
     border-radius: 1px;
     border:  1px solid #44475A;

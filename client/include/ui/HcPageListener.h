@@ -16,22 +16,44 @@
 
 QT_BEGIN_NAMESPACE
 
+class HcListenerItem : public QWidget
+{
+public:
+    QGridLayout* GridLayout  = {};
+    QLabel*      LabelStatus = {};
+
+    explicit HcListenerItem( QWidget* parent = nullptr );
+    explicit HcListenerItem(
+        const QString& text,
+        QWidget*       parent = nullptr
+    );
+
+    auto setStatus(
+        const QString& string
+    ) const -> void;
+};
+
+typedef struct {
+    QTableWidgetItem* Name;
+    QTableWidgetItem* Type;
+    QTableWidgetItem* Host;
+    QTableWidgetItem* Port;
+    HcListenerItem*   Status;
+
+    QTextEdit*        Logger;
+
+    auto stop() -> std::optional<std::string>;
+    auto start() -> std::optional<std::string>;
+    auto restart() -> std::optional<std::string>;
+    auto edit() -> std::optional<std::string>;
+} HcListener;
+
 class HcPageListener : public QWidget
 {
     bool SplitterMoveToggle = false;
     int  ListenersRunning   = 0;
 
-    typedef struct {
-        QTableWidgetItem* Name;
-        QTableWidgetItem* Type;
-        QTableWidgetItem* Host;
-        QTableWidgetItem* Port;
-        QTableWidgetItem* Status;
-
-        QTextEdit*        Logger;
-    } Listener;
-
-    std::vector<Listener*> TableEntries  = {};
+    std::vector<HcListener*> TableEntries  = {};
 
 public:
     QGridLayout*      gridLayout        = nullptr;

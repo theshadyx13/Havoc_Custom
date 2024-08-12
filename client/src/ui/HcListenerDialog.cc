@@ -170,15 +170,15 @@ auto HcListenerDialog::save() -> void {
         if ( Result->status != 200 ) {
             if ( ! Result->body.empty() ) {
                 if ( ( data = json::parse( Result->body ) ).is_discarded() ) {
-                    goto InvalidServerResponseError;
+                    goto ERROR_SERVER_RESPONSE;
                 }
 
                 if ( ! data.contains( "error" ) ) {
-                    goto InvalidServerResponseError;
+                    goto ERROR_SERVER_RESPONSE;
                 }
 
                 if ( ! data[ "error" ].is_string() ) {
-                    goto InvalidServerResponseError;
+                    goto ERROR_SERVER_RESPONSE;
                 }
 
                 Helper::MessageBox(
@@ -191,7 +191,7 @@ auto HcListenerDialog::save() -> void {
                 close();
                 return;
             } else {
-                goto InvalidServerResponseError;
+                goto ERROR_SERVER_RESPONSE;
             }
         } else {
             State = Saved;
@@ -200,7 +200,7 @@ auto HcListenerDialog::save() -> void {
         }
     }
 
-InvalidServerResponseError:
+ERROR_SERVER_RESPONSE:
     Helper::MessageBox(
         QMessageBox::Critical,
         "Listener failure",

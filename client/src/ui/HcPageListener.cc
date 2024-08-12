@@ -1,6 +1,72 @@
 #include <Havoc.h>
 #include <ui/HcPageListener.h>
 
+#include <QtCore/QVariant>
+#include <QtWidgets/QApplication>
+#include <QtWidgets/QGridLayout>
+#include <QtWidgets/QLabel>
+#include <QtWidgets/QWidget>
+
+HcListenerItem::HcListenerItem( QWidget* parent ) : QWidget( parent ) {
+    setObjectName( "HcStatusItem" );
+
+    GridLayout = new QGridLayout( this );
+    GridLayout->setObjectName( "GridLayout" );
+    GridLayout->setSpacing( 0 );
+    GridLayout->setContentsMargins( 0, 0, 0, 0 );
+
+    LabelStatus = new QLabel( this );
+    LabelStatus->setObjectName( "LabelStatus" );
+
+    auto policy = QSizePolicy( QSizePolicy::Maximum, QSizePolicy::Maximum );
+    policy.setHorizontalStretch( 0 );
+    policy.setVerticalStretch( 0 );
+    policy.setHeightForWidth( LabelStatus->sizePolicy().hasHeightForWidth() );
+
+    LabelStatus->setSizePolicy( policy );
+    LabelStatus->setAlignment( Qt::AlignCenter );
+
+    GridLayout->addWidget( LabelStatus, 0, 0, 1, 1 );
+
+    QMetaObject::connectSlotsByName( this );
+}
+
+auto HcListenerItem::setStatus(
+    const QString& string
+) const -> void {
+    auto text = QString( string );
+
+    if ( text.isEmpty() ) {
+        //
+        // if the string status is emtpy then do no
+        // change anything about the current status
+        //
+        return;
+    }
+
+    if ( text.startsWith( "+" ) ) {
+        LabelStatus->setProperty( "HcLabelDisplay", "green" );
+        text.remove( 0, 1 );
+    } else if ( text.startsWith( "-" ) ) {
+        LabelStatus->setProperty( "HcLabelDisplay", "red" );
+        text.remove( 0, 1 );
+    } else if ( text.startsWith( "*" ) ) {
+        LabelStatus->setProperty( "HcLabelDisplay", "tag" );
+        text.remove( 0, 1 );
+    }
+
+    LabelStatus->setText( text );
+    LabelStatus->style()->unpolish( LabelStatus );
+    LabelStatus->style()->polish( LabelStatus );
+}
+
+HcListenerItem::HcListenerItem(
+    const QString& text,
+    QWidget*       parent
+) : HcListenerItem( parent ) {
+    setStatus( text );
+}
+
 HcPageListener::HcPageListener() {
     if ( objectName().isEmpty() ) {
         setObjectName( QString::fromUtf8( "PageListener" ) );
@@ -105,7 +171,7 @@ auto HcPageListener::addListener(
     auto host     = QString();
     auto port     = QString();
     auto status   = QString();
-    auto listener = new Listener();
+    auto listener = new HcListener();
 
     if ( data.contains( "name" ) ) {
         if ( data[ "name" ].is_string() ) {
@@ -171,14 +237,13 @@ auto HcPageListener::addListener(
     listener->Type   = new QTableWidgetItem( type );
     listener->Host   = new QTableWidgetItem( host );
     listener->Port   = new QTableWidgetItem( port );
-    listener->Status = new QTableWidgetItem( status );
+    listener->Status = new HcListenerItem();
     listener->Logger = new QTextEdit();
 
     listener->Name->setFlags( listener->Name->flags() ^ Qt::ItemIsEditable );
     listener->Type->setFlags( listener->Type->flags() ^ Qt::ItemIsEditable );
     listener->Host->setFlags( listener->Host->flags() ^ Qt::ItemIsEditable );
     listener->Port->setFlags( listener->Port->flags() ^ Qt::ItemIsEditable );
-    listener->Status->setFlags( listener->Status->flags() ^ Qt::ItemIsEditable );
     listener->Logger->setProperty( "HcConsole", "true" );
     listener->Logger->setReadOnly( true );
 
@@ -188,13 +253,15 @@ auto HcPageListener::addListener(
         TableWidget->setRowCount( TableWidget->rowCount() + 1 );
     }
 
+    listener->Status->setStatus( status );
+
     const bool isSortingEnabled = TableWidget->isSortingEnabled();
     TableWidget->setSortingEnabled( false );
     TableWidget->setItem( TableWidget->rowCount() - 1, 0, listener->Name );
     TableWidget->setItem( TableWidget->rowCount() - 1, 1, listener->Type );
     TableWidget->setItem( TableWidget->rowCount() - 1, 2, listener->Host );
     TableWidget->setItem( TableWidget->rowCount() - 1, 3, listener->Port );
-    TableWidget->setItem( TableWidget->rowCount() - 1, 4, listener->Status );
+    TableWidget->setCellWidget( TableWidget->rowCount() - 1, 4, listener->Status );
     TableWidget->setSortingEnabled( isSortingEnabled );
 
     TableEntries.push_back( listener );
@@ -230,7 +297,7 @@ auto HcPageListener::setListenerStatus(
 ) -> void {
     for ( auto& listener : TableEntries ) {
         if ( listener->Name->text().toStdString() == name ) {
-            listener->Status->setText( status.c_str() );
+            listener->Status->setStatus( status.c_str() );
             break;
         }
     }
@@ -249,15 +316,16 @@ auto HcPageListener::handleListenerContextMenu(
 
     Name = TableWidget->item( TableWidget->currentRow(), 0 )->text();
 
-    Menu->addAction( "Logs"    );
-    Menu->addAction( "Stop"    );
+    Menu->addAction( "Logs" );
+    Menu->addAction( "Stop" );
     Menu->addAction( "Restart" );
+    Menu->addAction( "Edit" );
 
     if ( auto action = Menu->exec( TableWidget->horizontalHeader()->viewport()->mapToGlobal( pos ) ) ) {
-        if ( action->text().compare( "Logs" ) == 0 ) {
-            for ( auto& listener : TableEntries ) {
-                if ( listener->Name->text().compare( Name ) == 0 ) {
+        for ( auto& listener : TableEntries ) {
+            if ( listener->Name->text().compare( Name ) == 0 ) {
 
+                if ( action->text().compare( "Logs" ) == 0 ) {
                     if ( TabWidget->count() == 0 ) {
                         Splitter->setSizes( QList<int>() << 200 << 220 );
                         Splitter->handle( 1 )->setEnabled( true );
@@ -265,12 +333,22 @@ auto HcPageListener::handleListenerContextMenu(
                     }
 
                     TabWidget->addTab( listener->Logger, "[Logger] " + listener->Name->text() );
+                } else if ( action->text().compare( "Stop" ) == 0 ) {
+                    auto error = listener->stop();
 
-                    break;
+                    if ( error.has_value() ) {
+                        spdlog::debug( "listener failure with {}: {}", listener->Name->text().toStdString(), error.value() );
+                    }
+                } else if ( action->text().compare( "Restart" ) == 0 ) {
+
+                } else if ( action->text().compare( "Edit" ) == 0 ) {
+
+                } else {
+                    spdlog::debug( "[ERROR] invalid action from selected listener menu" );
                 }
+
+                break;
             }
-        } else {
-            spdlog::debug( "[ERROR] invalid action from selected listener menu" );
         }
     }
 }
@@ -289,4 +367,56 @@ auto HcPageListener::tabCloseRequested(
         Splitter->handle( 1 )->setEnabled( false );
         Splitter->handle( 1 )->setCursor( Qt::ArrowCursor );
     }
+}
+
+auto HcListener::stop() -> std::optional<std::string>
+{
+    auto result = httplib::Result();
+    auto error  = std::string();
+    auto name   = Name->text().toStdString();
+    auto data   = json();
+
+    result = Havoc->ApiSend( "/api/listener/stop", {
+        { "name", name }
+    } );
+
+    if ( result->status != 200 ) {
+        if ( result->body.empty() ) {
+            goto ERROR_SERVER_RESPONSE;
+        }
+
+        if ( ( data = json::parse( result->body ) ).is_discarded() ) {
+            goto ERROR_SERVER_RESPONSE;
+        }
+
+        if ( ! data.contains( "error" ) ) {
+            goto ERROR_SERVER_RESPONSE;
+        }
+
+        if ( ! data[ "error" ].is_string() ) {
+            goto ERROR_SERVER_RESPONSE;
+        }
+
+        return data[ "error" ].get<std::string>();
+    }
+
+    return {};
+
+ERROR_SERVER_RESPONSE:
+    return std::optional<std::string>( "invalid response from the server" );
+}
+
+auto HcListener::start() -> std::optional<std::string>
+{
+    return {};
+}
+
+auto HcListener::restart() -> std::optional<std::string>
+{
+    return {};
+}
+
+auto HcListener::edit() -> std::optional<std::string>
+{
+    return {};
 }
