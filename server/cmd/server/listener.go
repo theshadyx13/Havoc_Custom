@@ -74,6 +74,35 @@ func (t *Teamserver) ListenerInitDir(name string) (string, error) {
 	return path, nil
 }
 
+func (t *Teamserver) ListenerStop(name string) error {
+	var (
+		protocol string
+		status   string
+		err      error
+	)
+
+	if !t.ListenerExists(name) {
+		return errors.New("listener not found")
+	}
+
+	for _, listener := range t.listener {
+		protocol = listener.Data["protocol"].(string)
+
+		if listener.Name == name {
+			if status, err = t.plugins.ListenerStop(name, protocol); err != nil {
+				return err
+			}
+
+			t.UserBroadcast(true, t.EventCreate(EventListenerStop, map[string]string{
+				"name":   name,
+				"status": status,
+			}))
+		}
+	}
+
+	return nil
+}
+
 func (t *Teamserver) ListenerStart(name, protocol string, options map[string]any) error {
 	var (
 		err    error

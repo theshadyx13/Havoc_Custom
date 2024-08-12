@@ -80,11 +80,53 @@ ERROR:
 }
 
 func (api *ServerApi) listenerStop(ctx *gin.Context) {
+	var (
+		body     []byte
+		err      error
+		name     string
+		listener map[string]any
+	)
 
 	if !api.sanityCheck(ctx) {
 		ctx.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
+
+	// read from request the login data
+	if body, err = io.ReadAll(io.LimitReader(ctx.Request.Body, ApiMaxRequestRead)); err != nil {
+		logger.DebugError("Failed to read from server api login request: " + err.Error())
+		ctx.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+
+	logger.Debug("got request on /api/listener/stop:" + fmt.Sprintf("%s", string(body)))
+
+	// unmarshal the bytes into a map
+	if err = json.Unmarshal(body, &listener); err != nil {
+		logger.DebugError("Failed to unmarshal bytes to map: " + err.Error())
+		ctx.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+
+	// get name from listener start request
+	switch listener["name"].(type) {
+	case string:
+		name = listener["name"].(string)
+	default:
+		logger.DebugError("failed retrieve name: invalid type")
+		ctx.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+
+	if err = api.teamserver.ListenerStop(name); err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	ctx.AbortWithStatus(http.StatusOK)
+	return
 }
 
 func (api *ServerApi) listenerEdit(ctx *gin.Context) {

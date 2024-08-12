@@ -36,6 +36,7 @@ type teamserver interface {
 	UserStatus(username string) int
 
 	ListenerStart(name, protocol string, options map[string]any) error
+	ListenerStop(name string) error
 	ListenerEvent(protocol string, event map[string]any) (map[string]any, error)
 
 	AgentGenerate(ctx map[string]any, config map[string]any) (string, []byte, map[string]any, error)
@@ -101,38 +102,11 @@ func NewServerApi(teamserver teamserver) (*ServerApi, error) {
 
 // Start the server api
 // generates an HTTP certificate and then starts the api server
-func (api *ServerApi) Start(host, port, certsPath string, finished *chan bool) {
-	var (
-		certPath = certsPath + "/server.cert"
-		keyPath  = certsPath + "/server.key"
-		err      error
-		Cert     []byte
-		Key      []byte
-	)
-
-	// generate cert and key based on host
-	Cert, Key, err = cert.HTTPSGenerateRSACertificate(host)
-	if err != nil {
-		logger.Error("Failed to generate server certificates: " + err.Error())
-		os.Exit(0)
-	}
-
-	// write cert file to disk
-	err = os.WriteFile(certPath, Cert, 0644)
-	if err != nil {
-		logger.Error("Couldn't save server cert file: " + err.Error())
-		return
-	}
-
-	// write the cert key path to disk
-	err = os.WriteFile(keyPath, Key, 0644)
-	if err != nil {
-		logger.Error("couldn't save server cert file: " + err.Error())
-		return
-	}
+func (api *ServerApi) Start(host, port string, finished *chan bool) {
+	var err error
 
 	// start the api server
-	if err = api.Engine.RunTLS(host+":"+port, certPath, keyPath); err != nil {
+	if err = api.Engine.RunTLS(host+":"+port, api.ssl.cert, api.ssl.key); err != nil {
 		logger.Error("Failed to start webserver: " + err.Error())
 		return
 	}

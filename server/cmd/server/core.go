@@ -34,9 +34,10 @@ func (t *Teamserver) SetServerFlags(flags TeamserverFlags) {
 
 func (t *Teamserver) Start() {
 	var (
-		ServerFinished chan bool
-		err            error
-		server         profile.Server
+		ServerFinished    chan bool
+		err               error
+		server            profile.Server
+		certPath, keyPath string
 	)
 
 	if t.Server, err = api.NewServerApi(t); err != nil {
@@ -72,7 +73,7 @@ func (t *Teamserver) Start() {
 	// check if the ssl certification has been set in the profile
 	if len(server.Ssl.Key) == 0 && len(server.Ssl.Key) == 0 {
 		// has not been set, so we are going to generate a new pair of certs
-		certPath, keyPath, err := t.Server.GenerateSSL(server.Host, t.ConfigPath())
+		certPath, keyPath, err = t.Server.GenerateSSL(server.Host, t.ConfigPath())
 		if err != nil {
 			return
 		}
@@ -93,15 +94,15 @@ func (t *Teamserver) Start() {
 	}
 
 	// start the api server
-	go t.Server.Start(server.Host, server.Port, t.ConfigPath(), &ServerFinished)
+	go t.Server.Start(server.Host, server.Port, &ServerFinished)
 
 	logger.Info("starting server on %v", colors.BlueUnderline("https://"+server.Host+":"+server.Port))
 
-	// This should hold the Teamserver as long as the WebSocket Server is running
-	logger.Debug("wait til the server shutdown")
+	// this should hold the Teamserver as long as the WebSocket Server is running
+	logger.Debug("wait for server shutdown")
 	<-ServerFinished
 
-	logger.Warn("server finished (?)")
+	logger.Warn("havoc server finished running")
 	os.Exit(0)
 }
 
