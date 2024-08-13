@@ -325,8 +325,8 @@ auto HcPageListener::handleListenerContextMenu(
     name = ( ( HcListenerItem* ) TableWidget->cellWidget( TableWidget->currentRow(), 0 ) )->LabelStatus->text();
 
     menu->addAction( QIcon( ":/icons/16px-listener-start"   ), "Start"   );
-    menu->addAction( QIcon( ":/icons/16px-listener-restart" ), "Restart" );
     menu->addAction( QIcon( ":/icons/16px-listener-stop"    ), "Stop"    );
+    menu->addAction( QIcon( ":/icons/16px-listener-restart" ), "Restart" );
     menu->addAction( QIcon( ":/icons/16px-listener-edit"    ), "Edit"    );
     menu->addAction( QIcon( ":/icons/16px-listener-logs"    ), "Logs"    );
     menu->addAction( QIcon( ":/icons/16px-listener-remove"  ), "Remove"  );
