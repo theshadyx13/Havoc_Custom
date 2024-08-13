@@ -313,9 +313,8 @@ QMenu {
     background: #282a36;
     color: #f8f8f2;
     border: 1px solid #44475a;
-    padding: 2px;
+    padding: 3px 3px 3px 5px;
 }
-
 
 QMenu::item:selected {
     background: #313342;

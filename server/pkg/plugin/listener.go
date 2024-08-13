@@ -29,6 +29,33 @@ func (s *PluginSystem) ListenerStart(name, protocol string, options map[string]a
 	return data, err
 }
 
+func (s *PluginSystem) ListenerRestart(name, protocol string) (string, error) {
+	var (
+		status string
+		err    error
+		ext    *Plugin
+	)
+
+	err = errors.New("protocol not found")
+
+	s.loaded.Range(func(key, value any) bool {
+		ext = value.(*Plugin)
+
+		if ext.Type != PluginTypeListener {
+			return true
+		}
+
+		if protocol == ext.ListenerRegister()["protocol"].(string) {
+			status, err = ext.ListenerRestart(name)
+			return false
+		}
+
+		return true
+	})
+
+	return status, err
+}
+
 func (s *PluginSystem) ListenerStop(name, protocol string) (string, error) {
 	var (
 		status string
