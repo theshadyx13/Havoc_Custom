@@ -202,6 +202,29 @@ auto HavocClient::eventDispatch(
 
         Gui->PageListener->addListenerLog( name, log );
     }
+    else if ( type == Event::listener::remove )
+    {
+        auto name = std::string();
+
+        if ( data.empty() ) {
+            spdlog::error( "Event::listener::remove: invalid package (data emtpy)" );
+            return;
+        }
+
+        if ( data.contains( "name" ) ) {
+            if ( data[ "name" ].is_string() ) {
+                name = data[ "name" ].get<std::string>();
+            } else {
+                spdlog::error( "invalid listener remove: \"name\" is not string" );
+                return;
+            }
+        } else {
+            spdlog::error( "invalid listener remove: \"name\" is not found" );
+            return;
+        }
+
+        RemoveListener( name );
+    }
     else if ( type == Event::agent::add )
     {
         //

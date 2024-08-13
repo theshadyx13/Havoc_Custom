@@ -439,6 +439,31 @@ auto HavocClient::AddListener(
     Gui->PageListener->addListener( listener );
 }
 
+auto HavocClient::RemoveListener(
+    const std::string& name
+) -> void {
+    spdlog::debug( "removing listener: {}", name );
+
+    auto object = ListenerObject( name );
+
+    //
+    // remove listener from listener list
+    //
+    for ( auto iter = listeners.begin(); iter != listeners.end(); ++iter ) {
+        if ( object.has_value() ) {
+            auto data = object.value();
+            if ( data.contains( "name" ) && data[ "name" ].is_string() ) {
+                if ( data[ "name" ].get<std::string>() == name ) {
+                    listeners.erase( iter );
+                    break;
+                }
+            }
+        }
+    }
+
+    Gui->PageListener->removeListener( name );
+}
+
 auto HavocClient::ListenerObject(
     const std::string &name
 ) -> std::optional<json> {
@@ -588,4 +613,3 @@ auto HavocClient::SetupDirectory(
 
     return true;
 }
-

@@ -74,6 +74,38 @@ func (t *Teamserver) ListenerInitDir(name string) (string, error) {
     return path, nil
 }
 
+func (t *Teamserver) ListenerRemove(name string) error {
+    var (
+        protocol string
+        err      error
+    )
+
+    if !t.ListenerExists(name) {
+        return errors.New("listener not found")
+    }
+
+    for i := 0; i < len(t.listener); i++ {
+        protocol = t.listener[i].Data["protocol"].(string)
+
+        if t.listener[i].Name == name {
+            if err = t.plugins.ListenerRemove(name, protocol); err != nil {
+                return err
+            }
+
+            t.UserBroadcast(true, t.EventCreate(EventListenerRemove, map[string]string{
+                "name": name,
+            }))
+
+            // remove the current index from the listener entry
+            t.listener = append(t.listener[:i], t.listener[i+1:]...)
+
+            break
+        }
+    }
+
+    return nil
+}
+
 func (t *Teamserver) ListenerRestart(name string) error {
     var (
         protocol string
@@ -94,6 +126,7 @@ func (t *Teamserver) ListenerRestart(name string) error {
             }
 
             t.ListenerStatus(name, status)
+            break
         }
     }
 
@@ -123,6 +156,7 @@ func (t *Teamserver) ListenerStop(name string) error {
                 "name":   name,
                 "status": status,
             }))
+            break
         }
     }
 

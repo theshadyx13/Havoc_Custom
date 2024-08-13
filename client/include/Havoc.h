@@ -141,6 +141,10 @@ public:
         const json& listener
     ) -> void;
 
+    auto RemoveListener(
+        const std::string& name
+    ) -> void;
+
     //
     // Protocols
     //

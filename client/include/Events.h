@@ -31,6 +31,7 @@ namespace Event {
         static std::string stop   = "listener::stop";
         static std::string status = "listener::status";
         static std::string log    = "listener::log";
+        static std::string remove = "listener::remove";
     }
 };
 

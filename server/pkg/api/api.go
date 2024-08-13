@@ -38,6 +38,7 @@ type teamserver interface {
     ListenerStart(name, protocol string, options map[string]any) error
     ListenerStop(name string) error
     ListenerRestart(name string) error
+    ListenerRemove(name string) error
     ListenerEvent(protocol string, event map[string]any) (map[string]any, error)
 
     AgentGenerate(ctx map[string]any, config map[string]any) (string, []byte, map[string]any, error)
@@ -86,6 +87,7 @@ func NewServerApi(teamserver teamserver) (*ServerApi, error) {
     api.Engine.POST("/api/listener/start", api.listenerStart)
     api.Engine.POST("/api/listener/stop", api.listenerStop)
     api.Engine.POST("/api/listener/restart", api.listenerRestart)
+    api.Engine.POST("/api/listener/remove", api.listenerRemove)
     api.Engine.POST("/api/listener/edit", api.listenerEdit)
     api.Engine.POST("/api/listener/event", api.listenerEvent)
 

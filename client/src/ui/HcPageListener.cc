@@ -58,6 +58,7 @@ auto HcListenerItem::setText(
         text.remove( 0, 1 );
     } else if ( text.startsWith( "-" ) ) {
         LabelStatus->setProperty( "HcLabelDisplay", "red" );
+        LabelStatus->setToolTip( text );
         text.remove( 0, 1 );
     } else if ( text.startsWith( "*" ) ) {
         LabelStatus->setProperty( "HcLabelDisplay", "tag" );
@@ -277,10 +278,64 @@ auto HcPageListener::addListener(
     TableWidget->setCellWidget( TableWidget->rowCount() - 1, 4, listener->StatusItem );
 
     TableEntries.push_back( listener );
-    Listeners.push_back( data );
 
     /* increase the number of listeners */
     ListenersRunning++;
+
+    updateListenersRunningLabel( ListenersRunning );
+}
+
+auto HcPageListener::removeListener(
+    const std::string& name
+) -> void {
+    HcListener* listener      = {};
+    auto        listener_name = std::string();
+
+    //
+    // remove the listener from
+    // the table ui widget entry
+    //
+    for ( int i = 0; i < TableWidget->rowCount(); i++ ) {
+        listener_name = ( ( HcListenerItem* ) TableWidget->cellWidget( i, 0 ) )->LabelStatus->text().toStdString();
+
+        if ( listener_name == name ) {
+            spdlog::debug( "Remove listener from table: {}", name );
+            TableWidget->removeRow( i );
+            break;
+        }
+    }
+
+    //
+    // remove the listener entry from
+    // the table entry vector list
+    //
+    for ( int i = 0; i < TableEntries.size(); i++ ) {
+        if ( TableEntries[ i ]->name == listener_name ) {
+            listener = TableEntries[ i ];
+
+            TableEntries.erase( TableEntries.begin() + i );
+            break;
+        }
+    }
+
+    if ( listener ) {
+        delete listener->NameItem;
+        delete listener->TypeItem;
+        delete listener->HostItem;
+        delete listener->PortItem;
+        delete listener->StatusItem;
+        delete listener->Logger;
+        delete listener;
+    }
+
+    if ( TabWidget->count() == 0 ) {
+        Splitter->setSizes( QList<int>() << 0 );
+        Splitter->handle( 1 )->setEnabled( false );
+        Splitter->handle( 1 )->setCursor( Qt::ArrowCursor );
+    }
+
+    /* decrease the number of listeners */
+    ListenersRunning--;
 
     updateListenersRunningLabel( ListenersRunning );
 }
@@ -399,6 +454,19 @@ auto HcPageListener::handleListenerContextMenu(
                 spdlog::debug( "listener editing failure with {}: {}", name.toStdString(), error.value() );
             }
         }
+        else if ( action->text().compare( "Remove" ) == 0 ) {
+            auto error = listener.value()->remove();
+
+            if ( error.has_value() ) {
+                Helper::MessageBox(
+                    QMessageBox::Critical,
+                    "listener failure",
+                    std::format( "listener removal failure with {}: {}", name.toStdString(), error.value() )
+                );
+
+                spdlog::debug( "listener removal failure with {}: {}", name.toStdString(), error.value() );
+            }
+        }
         else {
             spdlog::debug( "[ERROR] invalid action from selected listener menu" );
         }
@@ -513,6 +581,42 @@ auto HcListener::restart() -> std::optional<std::string>
     auto data   = json();
 
     result = Havoc->ApiSend( "/api/listener/restart", {
+        { "name", name }
+    } );
+
+    if ( result->status != 200 ) {
+        if ( result->body.empty() ) {
+            goto ERROR_SERVER_RESPONSE;
+        }
+
+        if ( ( data = json::parse( result->body ) ).is_discarded() ) {
+            goto ERROR_SERVER_RESPONSE;
+        }
+
+        if ( ! data.contains( "error" ) ) {
+            goto ERROR_SERVER_RESPONSE;
+        }
+
+        if ( ! data[ "error" ].is_string() ) {
+            goto ERROR_SERVER_RESPONSE;
+        }
+
+        return data[ "error" ].get<std::string>();
+    }
+
+    return {};
+
+ERROR_SERVER_RESPONSE:
+    return std::optional<std::string>( "invalid response from the server" );
+}
+
+auto HcListener::remove() -> std::optional<std::string>
+{
+    auto result = httplib::Result();
+    auto error  = std::string();
+    auto data   = json();
+
+    result = Havoc->ApiSend( "/api/listener/remove", {
         { "name", name }
     } );
 

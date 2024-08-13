@@ -50,6 +50,7 @@ struct HcListener {
     auto start() -> std::optional<std::string>;
     auto restart() -> std::optional<std::string>;
     auto edit() -> std::optional<std::string>;
+    auto remove() -> std::optional<std::string>;
 };
 
 class HcPageListener : public QWidget
@@ -73,7 +74,6 @@ public:
     QTableWidgetItem* TitlePort         = nullptr;
     QTableWidgetItem* TitleStatus       = nullptr;
     std::vector<json> Protocols         = {};
-    std::vector<json> Listeners         = {};
 
     explicit HcPageListener();
     auto retranslateUi() -> void;
@@ -89,6 +89,10 @@ public:
     auto addListenerLog(
         const std::string& name,
         const std::string& log
+    ) -> void;
+
+    auto removeListener(
+        const std::string& name
     ) -> void;
 
     auto setListenerStatus(
