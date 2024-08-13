@@ -104,6 +104,10 @@ public:
         const std::string& output = ""
     ) -> void;
 
+    auto itemChanged(
+        QTableWidgetItem *item
+    ) -> void;
+
     auto actionShowHidden(
         bool checked
     ) -> void;

@@ -22,6 +22,21 @@ signals:
     ) -> void;
 };
 
+struct HcAgent;
+
+class HcAgentTableItem : public QTableWidgetItem {
+
+public:
+    HcAgent* agent  = {};
+    bool     ignore = true;
+
+    explicit HcAgentTableItem(
+        const QString&          value,
+        const Qt::ItemFlag      flags = Qt::ItemIsEditable,
+        const Qt::AlignmentFlag align = Qt::AlignCenter
+    );
+};
+
 struct HcAgent {
     std::string                 uuid;
     std::string                 type;
@@ -31,18 +46,18 @@ struct HcAgent {
     QString                     last;
 
     struct {
-        QTableWidgetItem* Uuid;
-        QTableWidgetItem* Internal;
-        QTableWidgetItem* Username;
-        QTableWidgetItem* Hostname;
-        QTableWidgetItem* ProcessPath;
-        QTableWidgetItem* ProcessName;
-        QTableWidgetItem* ProcessId;
-        QTableWidgetItem* ThreadId;
-        QTableWidgetItem* Arch;
-        QTableWidgetItem* System;
-        QTableWidgetItem* Note;
-        QTableWidgetItem* Last;
+        HcAgentTableItem* Uuid;
+        HcAgentTableItem* Internal;
+        HcAgentTableItem* Username;
+        HcAgentTableItem* Hostname;
+        HcAgentTableItem* ProcessPath;
+        HcAgentTableItem* ProcessName;
+        HcAgentTableItem* ProcessId;
+        HcAgentTableItem* ThreadId;
+        HcAgentTableItem* Arch;
+        HcAgentTableItem* System;
+        HcAgentTableItem* Note;
+        HcAgentTableItem* Last;
     } ui;
 
     //

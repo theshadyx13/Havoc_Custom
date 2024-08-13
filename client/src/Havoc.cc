@@ -444,8 +444,8 @@ auto HavocClient::ListenerObject(
 ) -> std::optional<json> {
 
     for ( auto& data : listeners ) {
-        if ( data.contains( "name" ) ) {
-            if ( data[ "name" ].is_string() ) {
+        if ( data.contains( "name" ) && data[ "name" ].is_string() ) {
+            if ( data[ "name" ].get<std::string>() == name ) {
                 return data;
             }
         }
@@ -459,10 +459,8 @@ auto HavocClient::Listeners() -> std::vector<std::string>
     auto names = std::vector<std::string>();
 
     for ( auto& data : listeners ) {
-        if ( data.contains( "name" ) ) {
-            if ( data[ "name" ].is_string() ) {
-                names.push_back( data[ "name" ].get<std::string>() );
-            }
+        if ( data.contains( "name" ) && data[ "name" ].is_string() ) {
+            names.push_back( data[ "name" ].get<std::string>() );
         }
     }
 

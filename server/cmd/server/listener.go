@@ -117,42 +117,55 @@ func (t *Teamserver) ListenerStart(name, protocol string, options map[string]any
 	for _, prot := range t.protocols {
 		if val, ok := prot.Data["protocol"]; ok {
 			if val.(string) == protocol {
-				if t.ListenerExists(name) {
+				// check if we want to start a listener with the same
+				// name by checking if a config has been specified
+				if t.ListenerExists(name) && options != nil {
 					return errors.New("listener already exists")
 				}
 
 				found = true
 
-				if path, err = t.ListenerInitDir(name); err != nil {
-					return errors.New("failed to create listener config path: " + err.Error())
+				if !t.ListenerExists(name) {
+					if path, err = t.ListenerInitDir(name); err != nil {
+						return errors.New("failed to create listener config path: " + err.Error())
+					}
 				}
 
 				if data, err = t.plugins.ListenerStart(name, protocol, options); err != nil {
 					return err
 				}
 
-				host, ok = data["host"]
-				port, ok = data["port"]
-				status, ok = data["status"]
+				if t.ListenerExists(name) {
+					status, ok = data["status"]
 
-				t.listener = append(t.listener, Handler{
-					Name: name,
-					Data: map[string]any{
-						"protocol":    protocol,
-						"host":        host,
-						"port":        port,
-						"status":      status,
-						"config.path": path,
-					},
-				})
+					t.UserBroadcast(true, t.EventCreate(EventListenerStart, map[string]string{
+						"name":   name,
+						"status": status,
+					}))
+				} else {
+					host, ok = data["host"]
+					port, ok = data["port"]
+					status, ok = data["status"]
 
-				t.UserBroadcast(true, t.EventCreate(EventListenerStart, map[string]string{
-					"name":     name,
-					"protocol": protocol,
-					"host":     host,
-					"port":     port,
-					"status":   status,
-				}))
+					t.listener = append(t.listener, Handler{
+						Name: name,
+						Data: map[string]any{
+							"protocol":    protocol,
+							"host":        host,
+							"port":        port,
+							"status":      status,
+							"config.path": path,
+						},
+					})
+
+					t.UserBroadcast(true, t.EventCreate(EventListenerStart, map[string]string{
+						"name":     name,
+						"protocol": protocol,
+						"host":     host,
+						"port":     port,
+						"status":   status,
+					}))
+				}
 
 				break
 			}

@@ -41,6 +41,7 @@ type teamserver interface {
 
 	AgentGenerate(ctx map[string]any, config map[string]any) (string, []byte, map[string]any, error)
 	AgentExecute(uuid string, data map[string]any, wait bool) (map[string]any, error)
+	AgentNote(uuid string, note string) error
 }
 
 type ServerApi struct {
@@ -91,6 +92,7 @@ func NewServerApi(teamserver teamserver) (*ServerApi, error) {
 	//
 	api.Engine.POST("/api/agent/build", api.agentBuild)
 	api.Engine.POST("/api/agent/execute", api.agentExecute)
+	api.Engine.POST("/api/agent/note", api.agentNote)
 
 	//
 	// websocket event endpoint

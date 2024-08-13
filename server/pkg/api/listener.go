@@ -38,31 +38,43 @@ func (api *ServerApi) listenerStart(ctx *gin.Context) {
 		return
 	}
 
-	// get name from listener start request
-	switch listener["name"].(type) {
-	case string:
-		name = listener["name"].(string)
-	default:
-		logger.DebugError("Failed retrieve name: invalid type")
+	if val, ok := listener["name"]; ok {
+		// get name from listener start request
+		switch val.(type) {
+		case string:
+			name = val.(string)
+		default:
+			logger.DebugError("Failed retrieve name: invalid type")
+			goto ERROR
+		}
+	} else {
+		logger.DebugError("failed retrieve listener name: not found")
 		goto ERROR
 	}
 
-	// get protocol from listener start request
-	switch listener["protocol"].(type) {
-	case string:
-		protocol = listener["protocol"].(string)
-	default:
-		logger.DebugError("Failed retrieve protocol: invalid type")
+	if val, ok := listener["protocol"]; ok {
+		// get protocol from listener start request
+		switch val.(type) {
+		case string:
+			protocol = val.(string)
+		default:
+			logger.DebugError("Failed retrieve protocol: invalid type")
+			goto ERROR
+		}
+	} else {
+		logger.DebugError("failed retrieve listener protocol: not found")
 		goto ERROR
 	}
 
-	// get options from listener start request
-	switch listener["data"].(type) {
-	case map[string]any:
-		options = listener["data"].(map[string]any)
-	default:
-		logger.DebugError("Failed retrieve data: invalid type")
-		goto ERROR
+	if val, ok := listener["data"]; ok {
+		// get options from listener start request
+		switch val.(type) {
+		case map[string]any:
+			options = val.(map[string]any)
+		default:
+			logger.DebugError("Failed retrieve listener data: invalid type")
+			goto ERROR
+		}
 	}
 
 	if err = api.teamserver.ListenerStart(name, protocol, options); err != nil {
@@ -108,12 +120,18 @@ func (api *ServerApi) listenerStop(ctx *gin.Context) {
 		return
 	}
 
-	// get name from listener start request
-	switch listener["name"].(type) {
-	case string:
-		name = listener["name"].(string)
-	default:
-		logger.DebugError("failed retrieve name: invalid type")
+	if val, ok := listener["name"]; ok {
+		// get name from listener start request
+		switch val.(type) {
+		case string:
+			name = val.(string)
+		default:
+			logger.DebugError("failed retrieve name: invalid type")
+			ctx.AbortWithStatus(http.StatusInternalServerError)
+			return
+		}
+	} else {
+		logger.DebugError("failed retrieve listener name: not found")
 		ctx.AbortWithStatus(http.StatusInternalServerError)
 		return
 	}
@@ -164,12 +182,17 @@ func (api *ServerApi) listenerEvent(ctx *gin.Context) {
 		return
 	}
 
-	// get protocol from listener start request
-	switch event["protocol"].(type) {
-	case string:
-		protocol = event["protocol"].(string)
-	default:
-		logger.DebugError("Failed retrieve protocol: invalid type")
+	if val, ok := event["protocol"]; ok {
+		// get protocol from listener start request
+		switch val.(type) {
+		case string:
+			protocol = val.(string)
+		default:
+			logger.DebugError("Failed retrieve protocol: invalid type")
+			goto ERROR
+		}
+	} else {
+		logger.DebugError("failed retrieve listener protocol: not found")
 		goto ERROR
 	}
 

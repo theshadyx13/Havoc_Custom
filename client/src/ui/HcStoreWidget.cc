@@ -68,8 +68,6 @@ HcMarketPluginItem::HcMarketPluginItem(
     LabelGroup->setSizePolicy( policy );
     LabelGroup->setText( group );
 
-    spdlog::debug( "professional: {}", professional );
-
     if ( group == "local" ) {
         LabelGroup->setProperty( "HcLabelDisplay", "tag" );
     } else {

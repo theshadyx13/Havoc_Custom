@@ -55,14 +55,17 @@ QAbstractItemView {
 QTableWidget {
     background-color: #282a36;
     color: #f8f8f2;
+    alternate-background-color: #313342
+}
+
+QTableWidget::item {
+    border-bottom: 1px solid #44475A;
 }
 
 QTableWidget::item:selected {
-    selection-background-color: #6272a4;
-    color: #6272a4;
+    background-color: #6272a4;
+    color: #F8F8F2;
 }
-
-
 
 QTabBar[HcProtocolTab="true"]::tab {
     background: #313342;
@@ -100,8 +103,9 @@ QTabBar[HcPageTab="true"]::tab:selected {
 QTabBar[HcTab="true"]::tab {
     background: #282A36;
     color: #f8f8f2;
-    margin-top: 3px;
+    margin: 3px 1px 0;
     padding: 4px 10px 4px 10px;
+    border: 1px solid #44475A;
     border-bottom-color: transparent;
 }
 
@@ -109,6 +113,7 @@ QTabBar[HcTab="true"]::tab:selected {
     background: #44475A;
     color: #f8f8f2;
     border: 1px solid #6272A4;
+    padding: 4px 10px 4px 10px;
     border-bottom-color: transparent;
 }
 
@@ -297,6 +302,8 @@ QLayout {
     color: #f8f8f2;
 }
 
+
+
 QCheckBox {
     background-color: #282a36;
     color: #f8f8f2;
@@ -308,6 +315,7 @@ QMenu {
     border: 1px solid #44475a;
     padding: 2px;
 }
+
 
 QMenu::item:selected {
     background: #313342;

@@ -55,16 +55,39 @@ func (t *Teamserver) AgentGenerate(ctx map[string]any, config map[string]any) (s
 	return "", nil, nil, errors.New("agent to generate not found")
 }
 
-func (t *Teamserver) AgentExecute(uuid string, data map[string]any, wait bool) (map[string]any, error) {
+func (t *Teamserver) AgentNote(uuid, note string) error {
 	var (
-		agent Agent
+		agent *Agent
 		value any
 		ok    bool
 	)
 
 	// load stored agent by uuid from map
 	if value, ok = t.agents.Load(uuid); ok {
-		agent = value.(Agent)
+		agent = value.(*Agent)
+		agent.note = note
+
+		t.UserBroadcast(true, t.EventCreate(EventAgentNote, map[string]any{
+			"uuid": uuid,
+			"note": note,
+		}))
+
+		return nil
+	}
+
+	return errors.New("agent by uuid not found")
+}
+
+func (t *Teamserver) AgentExecute(uuid string, data map[string]any, wait bool) (map[string]any, error) {
+	var (
+		agent *Agent
+		value any
+		ok    bool
+	)
+
+	// load stored agent by uuid from map
+	if value, ok = t.agents.Load(uuid); ok {
+		agent = value.(*Agent)
 		return t.plugins.AgentExecute(agent._type, uuid, data, wait)
 	}
 

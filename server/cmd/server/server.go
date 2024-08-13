@@ -2,24 +2,25 @@ package server
 
 import "errors"
 
-func (t *Teamserver) ServerAgentRegister(uuid, name string, agent map[string]any) error {
+func (t *Teamserver) ServerAgentRegister(uuid, name string, data map[string]any) error {
+	var agent = new(Agent)
 
 	// check if the given uuid already exists
 	if _, ok := t.agents.Load(uuid); ok {
 		return errors.New("agent with given uuid already exists")
 	}
 
+	agent.uuid = uuid
+	agent._type = name
+	agent.data = data
+
 	// store the agent data with the given uuid
-	t.agents.Store(uuid, Agent{
-		uuid:  uuid,
-		_type: name,
-		data:  agent,
-	})
+	t.agents.Store(uuid, agent)
 
 	t.UserBroadcast(true, t.EventCreate(EventAgentInitialize, map[string]any{
 		"uuid": uuid,
 		"type": name,
-		"meta": agent,
+		"meta": data,
 	}))
 
 	return nil
@@ -42,7 +43,7 @@ func (t *Teamserver) ServerAgent(uuid string) (map[string]any, error) {
 		return nil, errors.New("agent with given uuid doesn't exists")
 	}
 
-	return agent.(Agent).data, nil
+	return agent.(*Agent).data, nil
 }
 
 func (t *Teamserver) ServerAgentType(uuid string) (string, error) {
@@ -56,5 +57,5 @@ func (t *Teamserver) ServerAgentType(uuid string) (string, error) {
 		return "", errors.New("agent with given uuid doesn't exists")
 	}
 
-	return agent.(Agent)._type, nil
+	return agent.(*Agent)._type, nil
 }

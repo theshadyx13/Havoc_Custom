@@ -49,6 +49,7 @@ type Handler struct {
 type Agent struct {
 	uuid  string
 	_type string
+	note  string
 	data  map[string]any
 }
 

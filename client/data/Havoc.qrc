@@ -4,7 +4,6 @@
 
         <file alias="havoc-white">../data/icons/havoc.png</file>
 
-
         <file alias="32px-nocturn">../data/icons/32px-nocturn.png</file>
         <file alias="32px-nocturn-white">../data/icons/32px-nocturn-white.png</file>
 
@@ -51,6 +50,11 @@
 
         <file alias="32px-listener">../data/icons/32px-satellite.png</file>
         <file alias="32px-listener-white">../data/icons/32px-satellite-white.png</file>
+
+        <file alias="16px-listener-start">../data/icons/16px-right-arrow.png</file>
+        <file alias="16px-listener-logs">../data/icons/32px-file-list-white.png</file>
+
+        <file alias="32px-flash">../data/icons/32px-flash.png</file>
 
     </qresource>
 

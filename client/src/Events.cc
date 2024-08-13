@@ -48,12 +48,47 @@ auto HavocClient::eventDispatch(
     }
     else if ( type == Event::listener::start )
     {
+        auto name   = std::string();
+        auto status = std::string();
+
         if ( data.empty() ) {
             spdlog::error( "Event::listener::start: invalid package (data emtpy)" );
             return;
         }
 
-        AddListener( data );
+        if ( data.contains( "name" ) ) {
+            if ( data[ "name" ].is_string() ) {
+                name = data[ "name" ].get<std::string>().c_str();
+            } else {
+                spdlog::error( "invalid listener: \"name\" is not string" );
+                return;
+            }
+        } else {
+            spdlog::error( "invalid listener: \"name\" is not found" );
+            return;
+        }
+
+        if ( data.contains( "status" ) ) {
+            if ( data[ "status" ].is_string() ) {
+                status = data[ "status" ].get<std::string>().c_str();
+            } else {
+                spdlog::error( "invalid listener: \"status\" is not string" );
+                return;
+            }
+        } else {
+            spdlog::error( "invalid listener: \"status\" is not found" );
+            return;
+        }
+
+        if ( ListenerObject( name ).has_value() ) {
+            //
+            // if listener already exists then change
+            // the status instead to being started or available
+            //
+            Gui->PageListener->setListenerStatus( name, status );
+        } else {
+            AddListener( data );
+        }
     }
     else if ( type == Event::listener::edit )
     {
@@ -63,8 +98,6 @@ auto HavocClient::eventDispatch(
     {
         auto name   = std::string();
         auto status = std::string();
-
-        spdlog::debug( "Event::listener::stop -> {}", data.dump() );
 
         if ( data.empty() ) {
             spdlog::error( "Event::listener::status: invalid package (data emtpy)" );
@@ -474,6 +507,56 @@ auto HavocClient::eventDispatch(
             spdlog::error( "invalid agent build log: \"log\" is not found" );
             return;
         }
+    } else if ( type == Event::agent::note ) {
+        auto uuid = std::string();
+        auto note = std::string();
+
+        if ( data.empty() ) {
+            spdlog::error( "Event::agent::note: invalid package (data emtpy)" );
+            return;
+        }
+
+        spdlog::debug( "note: {}", data.dump() );
+
+        if ( data.contains( "uuid" ) ) {
+            if ( data[ "uuid" ].is_string() ) {
+                uuid = data[ "uuid" ].get<std::string>();
+            } else {
+                spdlog::error( "invalid agent callback: \"uuid\" is not string" );
+                return;
+            }
+        } else {
+            spdlog::error( "invalid agent callback: \"uuid\" is not found" );
+            return;
+        }
+
+        if ( data.contains( "note" ) ) {
+            if ( data[ "note" ].is_string() ) {
+                note = data[ "note" ].get<std::string>();
+            } else {
+                spdlog::error( "invalid agent callback: \"note\" is not string" );
+                return;
+            }
+        } else {
+            spdlog::error( "invalid agent callback: \"note\" is not found" );
+            return;
+        }
+
+        //
+        // set the note of the agent
+        //
+        if ( auto agent = Agent( uuid ) ) {
+            if ( agent.has_value() ) {
+                agent.value()->ui.Note->ignore = true;
+                agent.value()->ui.Note->setText( note.c_str() );
+                agent.value()->ui.Note->ignore = false;
+            } else {
+                spdlog::error( "invalid agent note: \"uuid\" agent does not have any value" );
+            }
+        } else {
+            spdlog::error( "invalid agent note: \"uuid\" agent not found" );
+        }
+
     } else {
         spdlog::debug( "invalid event: {} not found", type );
     }

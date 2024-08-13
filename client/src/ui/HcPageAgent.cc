@@ -67,6 +67,7 @@ HcPageAgent::HcPageAgent(
     AgentTable->horizontalHeader()->setStretchLastSection( true );
     AgentTable->verticalHeader()->setVisible( false );
     AgentTable->setFocusPolicy( Qt::NoFocus );
+    AgentTable->setAlternatingRowColors( true );
 
     AgentTab = new QTabWidget( Splitter );
     AgentTab->setObjectName( "AgentTab" );
@@ -99,10 +100,14 @@ HcPageAgent::HcPageAgent(
 
     AgentActionButton = new QToolButton( this );
     AgentActionButton->setObjectName( "AgentActionButton" );
+    AgentActionButton->setToolButtonStyle( Qt::ToolButtonTextBesideIcon );
     AgentActionButton->setText( "Actions" );
     AgentActionButton->setProperty( "HcButton", "true" );
     AgentActionButton->setMenu( AgentActionMenu );
+    AgentActionButton->setIcon( QIcon( ":/icons/32px-flash" ) );
     AgentActionButton->setPopupMode( QToolButton::InstantPopup );
+    AgentActionButton->setLayoutDirection( Qt::LeftToRight );
+    AgentActionButton->setMaximumWidth( 90 );
 
     Splitter->addWidget( AgentTable );
     Splitter->addWidget( AgentTab );
@@ -113,6 +118,7 @@ HcPageAgent::HcPageAgent(
     QObject::connect( AgentTab,         &QTabWidget::tabCloseRequested, this, &HcPageAgent::tabCloseRequested );
     QObject::connect( ActionPayload,    &QAction::triggered, this, &HcPageAgent::actionPayloadBuilder );
     QObject::connect( ActionShowHidden, &QAction::triggered, this, &HcPageAgent::actionShowHidden );
+    QObject::connect( AgentTable,       &QTableWidget::itemChanged, this, &HcPageAgent::itemChanged );
 
     gridLayout->addWidget( ComboAgentView,         0, 0, 1, 1 );
     gridLayout->addWidget( Splitter,               1, 0, 1, 7 );
@@ -153,17 +159,15 @@ auto HcPageAgent::addTab(
     AgentTab->setCurrentIndex( AgentTab->addTab( widget, name ) );
 }
 
-inline auto HcTableWidget(
-    const QString&     value,
-    const Qt::ItemFlag flags = Qt::ItemIsEditable
-) -> QTableWidgetItem* {
-    auto item = new QTableWidgetItem( value );
-
-    item->setTextAlignment( Qt::AlignCenter );
-    item->setFlags( item->flags() ^ flags );
-
-    return item;
-}
+HcAgentTableItem::HcAgentTableItem(
+    const QString&          value,
+    const Qt::ItemFlag      flags,
+    const Qt::AlignmentFlag align
+)  : QTableWidgetItem() {
+    setText( value );
+    setTextAlignment( align );
+    setFlags( this->flags() ^ flags );
+};
 
 auto HcPageAgent::addAgent(
     const json& metadata
@@ -204,18 +208,18 @@ auto HcPageAgent::addAgent(
         .data = metadata,
         .last = last,
         .ui   = {
-            .Uuid        = HcTableWidget( uuid ),
-            .Internal    = HcTableWidget( local ),
-            .Username    = HcTableWidget( user ),
-            .Hostname    = HcTableWidget( host ),
-            .ProcessPath = HcTableWidget( path ),
-            .ProcessName = HcTableWidget( process ),
-            .ProcessId   = HcTableWidget( pid ),
-            .ThreadId    = HcTableWidget( tid ),
-            .Arch        = HcTableWidget( arch ),
-            .System      = HcTableWidget( system ),
-            .Note        = HcTableWidget( "", Qt::NoItemFlags ),
-            .Last        = HcTableWidget( last ),
+            .Uuid        = new HcAgentTableItem( uuid ),
+            .Internal    = new HcAgentTableItem( local ),
+            .Username    = new HcAgentTableItem( user ),
+            .Hostname    = new HcAgentTableItem( host ),
+            .ProcessPath = new HcAgentTableItem( path ),
+            .ProcessName = new HcAgentTableItem( process ),
+            .ProcessId   = new HcAgentTableItem( pid ),
+            .ThreadId    = new HcAgentTableItem( tid ),
+            .Arch        = new HcAgentTableItem( arch ),
+            .System      = new HcAgentTableItem( system ),
+            .Note        = new HcAgentTableItem( "", Qt::NoItemFlags, Qt::AlignVCenter ),
+            .Last        = new HcAgentTableItem( last ),
         }
     };
 
@@ -223,6 +227,19 @@ auto HcPageAgent::addAgent(
     agent->console->setBottomLabel( QString( "[User: %1] [Process: %2] [Pid: %3] [Tid: %4]" ).arg( user ).arg( path ).arg( pid ).arg( tid ) );
     agent->console->setInputLabel( ">>>" );
     agent->console->LabelHeader->setFixedHeight( 0 );
+
+    agent->ui.Uuid->agent        = agent;
+    agent->ui.Internal->agent    = agent;
+    agent->ui.Username->agent    = agent;
+    agent->ui.Hostname->agent    = agent;
+    agent->ui.ProcessPath->agent = agent;
+    agent->ui.ProcessName->agent = agent;
+    agent->ui.ProcessId->agent   = agent;
+    agent->ui.ThreadId->agent    = agent;
+    agent->ui.Arch->agent        = agent;
+    agent->ui.System->agent      = agent;
+    agent->ui.Note->agent        = agent;
+    agent->ui.Last->agent        = agent;
 
     //
     // connect signals and slots
@@ -403,6 +420,34 @@ auto HcPageAgent::actionPayloadBuilder(
     }
 }
 
+auto HcPageAgent::itemChanged(
+    QTableWidgetItem *item
+) -> void {
+    auto agent_item = ( HcAgentTableItem* ) item;
+
+    //
+    // check if it is the agent item is equal to the note widget
+    //
+    if ( agent_item == agent_item->agent->ui.Note ) {
+        //
+        // check if is the note item getting created
+        //
+        if ( agent_item->ignore ) {
+            agent_item->ignore = false;
+            return;
+        }
+
+        auto note   = agent_item->text().toStdString();
+        auto result = Havoc->ApiSend( "/api/agent/note", {
+            { "uuid", agent_item->agent->uuid },
+            { "note", note }
+        } );
+
+        spdlog::debug( "result->status: {}", result->status );
+        spdlog::debug( "result->body  : {}", result->body );
+    }
+}
+
 HcAgentConsole::HcAgentConsole(
     HcAgent* meta,
     QWidget* parent
@@ -421,7 +466,7 @@ auto HcAgentConsole::inputEnter(
     //
     // invoke the command in a separate thread
     //
-    QtConcurrent::run( []( HcAgent* agent, const std::string& input ) {
+    auto future = QtConcurrent::run( []( HcAgent* agent, const std::string& input ) {
         py11::gil_scoped_acquire gil;
 
         if ( agent->interface.has_value() ) {

@@ -21,6 +21,7 @@ namespace Event {
         static std::string status     = "agent::status";
         static std::string remove     = "agent::remove";
         static std::string buildlog   = "agent::build-log";
+        static std::string note       = "agent::note";
     }
 
     namespace listener {

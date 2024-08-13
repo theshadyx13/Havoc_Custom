@@ -19,8 +19,9 @@ QT_BEGIN_NAMESPACE
 class HcListenerItem : public QWidget
 {
 public:
-    QGridLayout* GridLayout  = {};
-    QLabel*      LabelStatus = {};
+    QGridLayout*      GridLayout  = {};
+    QLabel*           LabelStatus = {};
+    QTableWidgetItem* Item        = {};
 
     explicit HcListenerItem( QWidget* parent = nullptr );
     explicit HcListenerItem(
@@ -28,25 +29,28 @@ public:
         QWidget*       parent = nullptr
     );
 
-    auto setStatus(
+    auto setText(
         const QString& string
     ) const -> void;
 };
 
-typedef struct {
-    QTableWidgetItem* Name;
-    QTableWidgetItem* Type;
-    QTableWidgetItem* Host;
-    QTableWidgetItem* Port;
-    HcListenerItem*   Status;
+struct HcListener {
+    std::string name;
+    std::string protocol;
 
-    QTextEdit*        Logger;
+    HcListenerItem* NameItem;
+    HcListenerItem* TypeItem;
+    HcListenerItem* HostItem;
+    HcListenerItem* PortItem;
+    HcListenerItem* StatusItem;
+
+    QTextEdit* Logger;
 
     auto stop() -> std::optional<std::string>;
     auto start() -> std::optional<std::string>;
     auto restart() -> std::optional<std::string>;
     auto edit() -> std::optional<std::string>;
-} HcListener;
+};
 
 class HcPageListener : public QWidget
 {
@@ -77,6 +81,10 @@ public:
     auto addListener(
         const json& data
     ) -> void;
+
+    auto getListener(
+        const QString& name
+    ) -> std::optional<HcListener*>;
 
     auto addListenerLog(
         const std::string& name,

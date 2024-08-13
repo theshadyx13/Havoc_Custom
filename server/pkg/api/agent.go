@@ -185,3 +185,78 @@ ERROR:
 		"error": err.Error(),
 	})
 }
+
+func (api *ServerApi) agentNote(ctx *gin.Context) {
+	var (
+		body     []byte
+		err      error
+		response map[string]any
+		uuid     string
+		note     string
+	)
+
+	if !api.sanityCheck(ctx) {
+		ctx.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+
+	// read from request the login data
+	if body, err = io.ReadAll(io.LimitReader(ctx.Request.Body, ApiMaxRequestRead)); err != nil {
+		logger.DebugError("Failed to read from server api login request: " + err.Error())
+		goto ERROR
+	}
+
+	logger.Debug("/api/agent/note -> %v", string(body))
+
+	// unmarshal the bytes into a map
+	if err = json.Unmarshal(body, &response); err != nil {
+		logger.DebugError("failed to unmarshal bytes to map: " + err.Error())
+		err = errors.New("invalid request")
+		return
+	}
+
+	if val, ok := response["uuid"]; ok {
+		// get uuid from client request
+		switch val.(type) {
+		case string:
+			uuid = val.(string)
+		default:
+			logger.DebugError("failed retrieve agent uuid: invalid type")
+			err = errors.New("invalid request")
+			goto ERROR
+		}
+	} else {
+		err = errors.New("invalid request")
+		goto ERROR
+	}
+
+	if val, ok := response["note"]; ok {
+		// get uuid from client request
+		switch val.(type) {
+		case string:
+			note = response["note"].(string)
+		default:
+			logger.DebugError("failed retrieve agent note: invalid type")
+			err = errors.New("invalid request")
+			goto ERROR
+		}
+	} else {
+		err = errors.New("invalid request")
+		goto ERROR
+	}
+
+	err = api.teamserver.AgentNote(uuid, note)
+	if err != nil {
+		err = fmt.Errorf("failed to set agent note: %v", err)
+		goto ERROR
+	}
+
+	// send back response
+	ctx.JSON(http.StatusOK, response)
+	return
+
+ERROR:
+	ctx.JSON(http.StatusInternalServerError, gin.H{
+		"error": err.Error(),
+	})
+}
