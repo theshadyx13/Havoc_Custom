@@ -156,7 +156,7 @@ auto HcPageAgent::addTab(
         Splitter->handle( 1 )->setCursor( Qt::SplitVCursor );
     }
 
-    AgentTab->setCurrentIndex( AgentTab->addTab( widget, name ) );
+    AgentTab->setCurrentIndex( AgentTab->addTab( widget, QIcon( ":/icons/32px-agent-console" ), name ) );
 }
 
 HcAgentTableItem::HcAgentTableItem(

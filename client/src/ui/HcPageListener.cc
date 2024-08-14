@@ -54,15 +54,15 @@ auto HcListenerItem::setText(
     }
 
     if ( text.startsWith( "+" ) ) {
-        LabelStatus->setProperty( "HcLabelDisplay", "green" );
         text.remove( 0, 1 );
+        LabelStatus->setProperty( "HcLabelDisplay", "green" );
     } else if ( text.startsWith( "-" ) ) {
+        text.remove( 0, 1 );
         LabelStatus->setProperty( "HcLabelDisplay", "red" );
         LabelStatus->setToolTip( text );
-        text.remove( 0, 1 );
     } else if ( text.startsWith( "*" ) ) {
-        LabelStatus->setProperty( "HcLabelDisplay", "tag" );
         text.remove( 0, 1 );
+        LabelStatus->setProperty( "HcLabelDisplay", "tag" );
     }
 
     LabelStatus->setText( text );

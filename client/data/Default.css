@@ -18,6 +18,22 @@ QMainWindow {
     color: #f8f8f2;
 }
 
+QScrollBar {
+    background: #313342;
+}
+
+QScrollBar::handle {
+    background: #44475A;
+}
+
+QScrollBar::add-line {
+    background: #313342;
+}
+
+QScrollBar::sub-line {
+    background: #313342;
+}
+
 QStackedWidget {
     background-color: #313342;
     color: #f8f8f2;
@@ -104,7 +120,7 @@ QTabBar[HcTab="true"]::tab {
     background: #282A36;
     color: #f8f8f2;
     margin: 3px 1px 0;
-    padding: 4px 10px 4px 10px;
+    padding: 4px 10px 2px 10px;
     border: 1px solid #44475A;
     border-bottom-color: transparent;
 }
@@ -113,7 +129,7 @@ QTabBar[HcTab="true"]::tab:selected {
     background: #44475A;
     color: #f8f8f2;
     border: 1px solid #6272A4;
-    padding: 4px 10px 4px 10px;
+    padding: 4px 10px 2px 10px;
     border-bottom-color: transparent;
 }
 
@@ -301,8 +317,6 @@ QLayout {
     background-color: #282A36;
     color: #f8f8f2;
 }
-
-
 
 QCheckBox {
     background-color: #282a36;

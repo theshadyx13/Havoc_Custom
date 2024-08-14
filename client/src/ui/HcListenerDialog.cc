@@ -216,6 +216,8 @@ auto HcListenerDialog::AddProtocol(
     const std::string&  name,
     const py11::object& object
 ) -> void {
+    py11::gil_scoped_acquire gil;
+
     auto protocol = Protocol {
         .name   = name,
         .widget = new QWidget
@@ -224,8 +226,6 @@ auto HcListenerDialog::AddProtocol(
     protocol.widget->setObjectName( "HcListenerDialog.Protocol." + QString( name.c_str() ) );
 
     try {
-        py11::gil_scoped_acquire gil;
-
         protocol.instance = object();
         protocol.instance.attr( "_hc_set_name" )( name );
         protocol.instance.attr( "_hc_main" )();
