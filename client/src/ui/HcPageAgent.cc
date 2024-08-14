@@ -167,7 +167,7 @@ HcAgentTableItem::HcAgentTableItem(
     setText( value );
     setTextAlignment( align );
     setFlags( this->flags() ^ flags );
-};
+}
 
 auto HcPageAgent::addAgent(
     const json& metadata
@@ -294,23 +294,40 @@ auto HcPageAgent::addAgent(
 auto HcPageAgent::handleAgentMenu(
     const QPoint& pos
 ) -> void {
-    auto menu = QMenu( this );
-    auto uuid = std::string();
+    auto menu       = QMenu( this );
+    auto uuid       = std::string();
+    auto selections = AgentTable->selectionModel()->selectedRows();
 
     /* check if we point to a session table item/agent */
     if ( ! AgentTable->itemAt( pos ) ) {
         return;
     }
 
-    uuid = AgentTable->item( AgentTable->currentRow(), 0 )->text().toStdString();
-
-    menu.addAction( "Interact" );
+    if ( selections.count() > 1 ) {
+        menu.addAction( QIcon( ":/icons/16px-agent-console" ), "Interact" );
+        menu.addSeparator();
+        menu.addAction( QIcon( ":/icons/16px-remove"  ), "Remove"  );
+    } else {
+        //
+        // if a single selected agent item then try
+        // to add the registered actions as well
+        //
+        menu.addAction( QIcon( ":/icons/16px-agent-console" ), "Interact" );
+        menu.addSeparator();
+        menu.addAction( QIcon( ":/icons/16px-remove"  ), "Remove"  );
+    }
 
     if ( auto action = menu.exec( AgentTable->horizontalHeader()->viewport()->mapToGlobal( pos ) ) ) {
-        if ( action->text().compare( "Interact" ) == 0 ) {
-            spawnAgentConsole( uuid );
-        } else {
-            spdlog::debug( "[ERROR] invalid action from selected agent menu" );
+        for ( const auto& selected : selections ) {
+            uuid = AgentTable->item( selected.row(), 0 )->text().toStdString();
+
+            if ( action->text().compare( "Interact" ) == 0 ) {
+                spawnAgentConsole( uuid );
+            } else if ( action->text().compare( "Remove" ) == 0 ) {
+
+            } else {
+                spdlog::debug( "[ERROR] invalid action from selected agent menu" );
+            }
         }
     }
 }

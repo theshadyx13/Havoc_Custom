@@ -319,20 +319,23 @@ auto HcPageListener::removeListener(
     }
 
     if ( listener ) {
-        delete listener->NameItem;
-        delete listener->TypeItem;
-        delete listener->HostItem;
-        delete listener->PortItem;
-        delete listener->StatusItem;
-        delete listener->Logger;
-        delete listener;
+         delete listener->NameItem;
+         delete listener->TypeItem;
+         delete listener->HostItem;
+         delete listener->PortItem;
+         delete listener->StatusItem;
+         delete listener->Logger;
+         delete listener;
     }
 
-    if ( TabWidget->count() == 0 ) {
-        Splitter->setSizes( QList<int>() << 0 );
-        Splitter->handle( 1 )->setEnabled( false );
-        Splitter->handle( 1 )->setCursor( Qt::ArrowCursor );
-    }
+    //
+    // NOTE: for what ever it causes the TableWidget to disappear lol
+    //
+    //    if ( TabWidget->count() == 0 ) {
+    //        Splitter->setSizes( QList<int>() << 0 );
+    //        Splitter->handle( 1 )->setEnabled( false );
+    //        Splitter->handle( 1 )->setCursor( Qt::ArrowCursor );
+    //    }
 
     /* decrease the number of listeners */
     ListenersRunning--;
@@ -369,106 +372,120 @@ auto HcPageListener::setListenerStatus(
 auto HcPageListener::handleListenerContextMenu(
     const QPoint& pos
 ) -> void {
-    auto menu = new QMenu( this );
-    auto name = QString();
+    auto menu       = QMenu( this );
+    auto name       = QString();
+    auto selections = TableWidget->selectionModel()->selectedRows();
 
     if ( ! TableWidget->itemAt( pos ) ) {
-        spdlog::debug( "itemAt( pos ) failed" );
         return;
     }
 
-    name = ( ( HcListenerItem* ) TableWidget->cellWidget( TableWidget->currentRow(), 0 ) )->LabelStatus->text();
+    if ( selections.count() > 1 ) {
+        menu.addAction( QIcon( ":/icons/16px-listener-start" ), "Start" );
+        menu.addAction( QIcon( ":/icons/16px-listener-stop" ), "Stop" );
+        menu.addAction( QIcon( ":/icons/16px-listener-restart" ), "Restart" );
+        menu.addSeparator();
+        menu.addAction( QIcon( ":/icons/16px-listener-logs" ), "Logs" );
+        menu.addSeparator();
+        menu.addAction( QIcon( ":/icons/16px-remove" ), "Remove" );
+    } else {
+        menu.addAction( QIcon( ":/icons/16px-listener-start" ), "Start" );
+        menu.addAction( QIcon( ":/icons/16px-listener-stop" ), "Stop" );
+        menu.addAction( QIcon( ":/icons/16px-listener-restart" ), "Restart" );
+        menu.addSeparator();
+        menu.addAction( QIcon( ":/icons/16px-listener-edit" ), "Edit" );
+        menu.addAction( QIcon( ":/icons/16px-listener-logs" ), "Logs" );
+        menu.addSeparator();
+        menu.addAction( QIcon( ":/icons/16px-remove" ), "Remove" );
+    }
 
-    menu->addAction( QIcon( ":/icons/16px-listener-start"   ), "Start"   );
-    menu->addAction( QIcon( ":/icons/16px-listener-stop"    ), "Stop"    );
-    menu->addAction( QIcon( ":/icons/16px-listener-restart" ), "Restart" );
-    menu->addAction( QIcon( ":/icons/16px-listener-edit"    ), "Edit"    );
-    menu->addAction( QIcon( ":/icons/16px-listener-logs"    ), "Logs"    );
-    menu->addAction( QIcon( ":/icons/16px-listener-remove"  ), "Remove"  );
+    if ( auto action = menu.exec( TableWidget->horizontalHeader()->viewport()->mapToGlobal( pos ) ) ) {
+        for ( const auto& selected : selections ) {
+            name = ( ( HcListenerItem* ) TableWidget->cellWidget( selected.row(), 0 ) )->LabelStatus->text();
 
-    if ( auto action = menu->exec( TableWidget->horizontalHeader()->viewport()->mapToGlobal( pos ) ) ) {
-        auto listener = getListener( name );
-        if ( ! listener.has_value() ) {
-            spdlog::debug( "[ERROR] listener not found" );
-            return;
-        }
-
-        if ( action->text().compare( "Logs" ) == 0 ) {
-            if ( TabWidget->count() == 0 ) {
-                Splitter->setSizes( QList<int>() << 200 << 220 );
-                Splitter->handle( 1 )->setEnabled( true );
-                Splitter->handle( 1 )->setCursor( Qt::SplitVCursor );
+            auto listener = getListener( name );
+            if ( ! listener.has_value() ) {
+                spdlog::debug( "[ERROR] listener not found" );
+                continue;
             }
 
-            TabWidget->addTab( listener.value()->Logger, "[Logger] " + name );
-        }
-        else if ( action->text().compare( "Start" ) == 0 ) {
-            auto error = listener.value()->start();
+            if ( action->text().compare( "Logs" ) == 0 ) {
+                if ( TabWidget->count() == 0 ) {
+                    Splitter->setSizes( QList<int>() << 200 << 220 );
+                    Splitter->handle( 1 )->setEnabled( true );
+                    Splitter->handle( 1 )->setCursor( Qt::SplitVCursor );
+                }
 
-            if ( error.has_value() ) {
-                Helper::MessageBox(
-                    QMessageBox::Critical,
-                    "listener failure",
-                    std::format( "listener starting failure with {}: {}", name.toStdString(), error.value() )
-                );
-
-                spdlog::debug( "listener starting failure with {}: {}", name.toStdString(), error.value() );
+                TabWidget->addTab( listener.value()->Logger, "[Logger] " + name );
             }
-        }
-        else if ( action->text().compare( "Stop" ) == 0 ) {
-            auto error = listener.value()->stop();
+            else if ( action->text().compare( "Start" ) == 0 ) {
+                auto error = listener.value()->start();
 
-            if ( error.has_value() ) {
-                Helper::MessageBox(
-                    QMessageBox::Critical,
-                    "listener failure",
-                    std::format( "listener stopping failure with {}: {}", name.toStdString(), error.value() )
-                );
+                if ( error.has_value() ) {
+                    Helper::MessageBox(
+                        QMessageBox::Critical,
+                        "listener failure",
+                        std::format( "listener starting failure with {}: {}", name.toStdString(), error.value() )
+                    );
 
-                spdlog::debug( "listener stopping failure with {}: {}", name.toStdString(), error.value() );
+                    spdlog::debug( "listener starting failure with {}: {}", name.toStdString(), error.value() );
+                }
             }
-        }
-        else if ( action->text().compare( "Restart" ) == 0 ) {
-            auto error = listener.value()->restart();
+            else if ( action->text().compare( "Stop" ) == 0 ) {
+                auto error = listener.value()->stop();
 
-            if ( error.has_value() ) {
-                Helper::MessageBox(
-                    QMessageBox::Critical,
-                    "listener failure",
-                    std::format( "listener restarting failure with {}: {}", name.toStdString(), error.value() )
-                );
+                if ( error.has_value() ) {
+                    Helper::MessageBox(
+                        QMessageBox::Critical,
+                        "listener failure",
+                        std::format( "listener stopping failure with {}: {}", name.toStdString(), error.value() )
+                    );
 
-                spdlog::debug( "listener restarting failure with {}: {}", name.toStdString(), error.value() );
+                    spdlog::debug( "listener stopping failure with {}: {}", name.toStdString(), error.value() );
+                }
             }
-        }
-        else if ( action->text().compare( "Edit" ) == 0 ) {
-            auto error = listener.value()->edit();
+            else if ( action->text().compare( "Restart" ) == 0 ) {
+                auto error = listener.value()->restart();
 
-            if ( error.has_value() ) {
-                Helper::MessageBox(
-                    QMessageBox::Critical,
-                    "listener failure",
-                    std::format( "listener editing failure with {}: {}", name.toStdString(), error.value() )
-                );
+                if ( error.has_value() ) {
+                    Helper::MessageBox(
+                        QMessageBox::Critical,
+                        "listener failure",
+                        std::format( "listener restarting failure with {}: {}", name.toStdString(), error.value() )
+                    );
 
-                spdlog::debug( "listener editing failure with {}: {}", name.toStdString(), error.value() );
+                    spdlog::debug( "listener restarting failure with {}: {}", name.toStdString(), error.value() );
+                }
             }
-        }
-        else if ( action->text().compare( "Remove" ) == 0 ) {
-            auto error = listener.value()->remove();
+            else if ( action->text().compare( "Edit" ) == 0 ) {
+                auto error = listener.value()->edit();
 
-            if ( error.has_value() ) {
-                Helper::MessageBox(
-                    QMessageBox::Critical,
-                    "listener failure",
-                    std::format( "listener removal failure with {}: {}", name.toStdString(), error.value() )
-                );
+                if ( error.has_value() ) {
+                    Helper::MessageBox(
+                        QMessageBox::Critical,
+                        "listener failure",
+                        std::format( "listener editing failure with {}: {}", name.toStdString(), error.value() )
+                    );
 
-                spdlog::debug( "listener removal failure with {}: {}", name.toStdString(), error.value() );
+                    spdlog::debug( "listener editing failure with {}: {}", name.toStdString(), error.value() );
+                }
             }
-        }
-        else {
-            spdlog::debug( "[ERROR] invalid action from selected listener menu" );
+            else if ( action->text().compare( "Remove" ) == 0 ) {
+                auto error = listener.value()->remove();
+
+                if ( error.has_value() ) {
+                    Helper::MessageBox(
+                        QMessageBox::Critical,
+                        "listener failure",
+                        std::format( "listener removal failure with {}: {}", name.toStdString(), error.value() )
+                    );
+
+                    spdlog::debug( "listener removal failure with {}: {}", name.toStdString(), error.value() );
+                }
+            }
+            else {
+                spdlog::debug( "[ERROR] invalid action from selected listener menu" );
+            }
         }
     }
 }

@@ -316,6 +316,12 @@ QMenu {
     padding: 3px 3px 3px 5px;
 }
 
+QMenu::separator {
+    height: 1px;
+    background: #44475A;
+    margin: 0;
+}
+
 QMenu::item:selected {
     background: #313342;
     color: #f8f8f2;

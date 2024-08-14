@@ -54,10 +54,13 @@
         <file alias="16px-listener-start">../data/icons/16px-play.png</file>
         <file alias="16px-listener-logs">../data/icons/16px-file-list-white.png</file>
         <file alias="16px-listener-restart">../data/icons/16px-restart.png</file>
-        <file alias="16px-listener-remove">../data/icons/16px-trash-bin.png</file>
         <file alias="16px-listener-stop">../data/icons/16px-pause.png</file>
         <file alias="16px-listener-edit">../data/icons/16px-edit.png</file>
 
+
+        <file alias="16px-agent-console">../data/icons/16px-console.png</file>
+
+        <file alias="16px-remove">../data/icons/16px-trash-bin.png</file>
         <file alias="32px-flash">../data/icons/32px-flash.png</file>
 
     </qresource>
