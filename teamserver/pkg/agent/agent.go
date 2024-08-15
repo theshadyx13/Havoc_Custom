@@ -1241,7 +1241,10 @@ func (agents *Agents) AgentsAppend(demon *Agent) []*Agent {
 
 func getWindowsVersionString(OsVersion []int) string {
 	var WinVersion = "Unknown"
-
+	if len(OsVersion) != 5 {
+		logger.Debug("LinuxOS or MacOS:", OsVersion)
+		return WinVersion
+	}
 	if OsVersion[0] == 10 && OsVersion[1] == 0 && OsVersion[2] != 0x0000001 && OsVersion[4] == 20348 {
 		WinVersion = "Windows 2022 Server 22H2"
 	} else if OsVersion[0] == 10 && OsVersion[1] == 0 && OsVersion[2] != 0x0000001 && OsVersion[4] == 17763 {
